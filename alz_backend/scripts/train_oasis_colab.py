@@ -97,7 +97,9 @@ def main() -> None:
     training_cfg.mixed_precision = enable_mixed_precision
     training_cfg.data = ResearchDataConfig(
         batch_size=int(args.batch_size) if args.batch_size is not None else training_cfg.data.batch_size,
-        num_workers=int(args.num_workers) if args.num_workers is not None else training_cfg.data.num_workers,
+        num_workers=int(args.num_workers)
+        if args.num_workers is not None
+        else (0 if _running_in_colab() else training_cfg.data.num_workers),
         cache_rate=float(args.cache_rate) if args.cache_rate is not None else training_cfg.data.cache_rate,
         image_size=tuple(args.image_size) if args.image_size is not None else training_cfg.data.image_size,
         seed=training_cfg.data.seed,
@@ -110,6 +112,7 @@ def main() -> None:
     )
 
     print(f"Using device={training_cfg.device} mixed_precision={training_cfg.mixed_precision}")
+    print(f"Using batch_size={training_cfg.data.batch_size} num_workers={training_cfg.data.num_workers}")
     print(f"OASIS source={os.environ['ALZ_OASIS_SOURCE_DIR']}")
     print(f"Training config={config_path}")
 
