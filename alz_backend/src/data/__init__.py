@@ -36,6 +36,7 @@ from .kaggle_dataset import (
     infer_kaggle_dataset_type,
     load_kaggle_manifest,
 )
+from .kaggle_upload_bundle import KaggleUploadBundleError, KaggleUploadBundleResult, build_kaggle_upload_bundle
 from .kaggle_splits import KaggleSplitResult, build_kaggle_splits
 from .loaders import (
     OASISDataloaderBundle,
@@ -47,6 +48,15 @@ from .loaders import (
 )
 from .oasis1 import OASIS1ManifestResult, build_oasis1_manifest
 from .oasis1_splits import OASIS1SplitResult, build_oasis1_splits
+from .oasis2 import (
+    OASIS2RawInventoryResult,
+    OASIS2SessionManifestResult,
+    OASIS2SourceLayout,
+    build_oasis2_raw_inventory,
+    build_oasis2_session_manifest,
+    resolve_oasis2_source_layout,
+)
+from .oasis2_upload_bundle import OASIS2UploadBundleResult, build_oasis2_upload_bundle
 from .oasis2_readiness import (
     OASIS2ReadinessCheck,
     OASIS2ReadinessReport,
@@ -55,6 +65,7 @@ from .oasis2_readiness import (
     resolve_oasis2_source_root,
     save_oasis2_readiness_report,
 )
+from .oasis_upload_bundle import OASISUploadBundleError, OASISUploadBundleResult, build_oasis_upload_bundle
 from .oasis_dataset import (
     OASISDatasetSpec,
     build_oasis_dataset_spec,
@@ -80,12 +91,20 @@ __all__ = [
     "KaggleDatasetSpec",
     "KaggleManifestResult",
     "KaggleSplitResult",
+    "KaggleUploadBundleError",
+    "KaggleUploadBundleResult",
     "OASISDataloaderBundle",
     "OASISDatasetBundle",
     "OASIS1ManifestResult",
     "OASIS1SplitResult",
     "OASIS2ReadinessCheck",
     "OASIS2ReadinessReport",
+    "OASIS2RawInventoryResult",
+    "OASIS2SessionManifestResult",
+    "OASIS2SourceLayout",
+    "OASIS2UploadBundleResult",
+    "OASISUploadBundleError",
+    "OASISUploadBundleResult",
     "OASISDatasetSpec",
     "OASISLoaderConfig",
     "OASISSplitArtifacts",
@@ -111,7 +130,12 @@ __all__ = [
     "build_oasis1_manifest",
     "build_oasis1_splits",
     "build_oasis2_readiness_report",
+    "build_oasis2_raw_inventory",
+    "build_oasis2_session_manifest",
+    "build_oasis2_upload_bundle",
+    "build_oasis_upload_bundle",
     "build_kaggle_dataset_spec",
+    "build_kaggle_upload_bundle",
     "build_oasis_datasets",
     "build_oasis_monai_dataloader",
     "build_oasis_monai_dataset",
@@ -122,6 +146,7 @@ __all__ = [
     "load_oasis_manifest",
     "discover_external_3d_images",
     "resolve_oasis2_source_root",
+    "resolve_oasis2_source_layout",
     "save_oasis2_readiness_report",
     "build_scope_data_plan",
     "save_scope_data_plan",

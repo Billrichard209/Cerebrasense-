@@ -91,6 +91,30 @@ def test_oasis2_readiness_report_can_be_saved(tmp_path: Path) -> None:
     assert "OASIS-2 Readiness Report" in md_path.read_text(encoding="utf-8")
 
 
+def test_oasis2_readiness_detects_split_raw_parts_automatically(tmp_path: Path) -> None:
+    """Split raw OAS2 part folders should be recognized as a usable readiness source."""
+
+    settings = _build_settings(tmp_path)
+    raw_dir_1 = tmp_path / "OAS2_RAW_PART1" / "OAS2_0001_MR1" / "RAW"
+    raw_dir_2 = tmp_path / "OAS2_RAW_PART2" / "OAS2_0001_MR2" / "RAW"
+    raw_dir_1.mkdir(parents=True, exist_ok=True)
+    raw_dir_2.mkdir(parents=True, exist_ok=True)
+    (raw_dir_1 / "mpr-1.nifti.hdr").write_bytes(b"")
+    (raw_dir_1 / "mpr-1.nifti.img").write_bytes(b"")
+    (raw_dir_2 / "mpr-2.nifti.hdr").write_bytes(b"")
+    (raw_dir_2 / "mpr-2.nifti.img").write_bytes(b"")
+
+    report = build_oasis2_readiness_report(settings)
+    payload = report.to_payload()
+
+    assert report.overall_status == "warn"
+    assert payload["dataset_summary"]["source_exists"] is True
+    assert payload["dataset_summary"]["supported_volume_file_count"] == 4
+    assert payload["dataset_summary"]["unique_subject_id_count"] == 1
+    assert payload["dataset_summary"]["longitudinal_subject_count"] == 1
+    assert payload["source_resolution"] == "auto_detected_part_roots"
+
+
 def test_resolve_oasis2_source_root_can_use_environment_override(tmp_path: Path, monkeypatch) -> None:
     """Environment overrides should win when present."""
 

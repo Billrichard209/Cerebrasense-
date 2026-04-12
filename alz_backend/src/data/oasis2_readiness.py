@@ -13,14 +13,14 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from os import getenv
 from pathlib import Path
 from typing import Any
 
 from src.configs.runtime import AppSettings
 from src.utils.io_utils import ensure_directory
 
-OASIS2_SOURCE_ENV_VAR = "ALZ_OASIS2_SOURCE_DIR"
+from .oasis2 import OASIS2_SOURCE_ENV_VAR, resolve_oasis2_source_layout
+
 SUPPORTED_3D_VOLUME_SUFFIXES = (".nii", ".nii.gz", ".img", ".hdr", ".mgh", ".mgz")
 DICOM_SUFFIXES = (".dcm", ".ima")
 METADATA_SUFFIXES = (".csv", ".tsv", ".xls", ".xlsx", ".xml", ".json")
@@ -59,25 +59,8 @@ def resolve_oasis2_source_root(
 ) -> tuple[Path, list[Path], str]:
     """Resolve the most likely OASIS-2 source root and return the search context."""
 
-    resolved_settings = settings or AppSettings.from_env()
-    if source_root is not None:
-        return source_root.expanduser().resolve(), [], "argument"
-
-    env_value = getenv(OASIS2_SOURCE_ENV_VAR)
-    if env_value:
-        return Path(env_value).expanduser().resolve(), [], "env"
-
-    candidate_roots = [
-        resolved_settings.collection_root / "OASIS2",
-        resolved_settings.collection_root / "OASIS-2",
-        resolved_settings.workspace_root / "OASIS2",
-        resolved_settings.workspace_root / "OASIS-2",
-    ]
-    resolved_candidates = [candidate.resolve() for candidate in candidate_roots]
-    for candidate in resolved_candidates:
-        if candidate.exists():
-            return candidate, resolved_candidates, "auto_existing_candidate"
-    return resolved_candidates[0], resolved_candidates, "auto_default_candidate"
+    layout = resolve_oasis2_source_layout(settings, source_root=source_root)
+    return layout.source_root, list(layout.candidate_roots), layout.source_resolution
 
 
 @dataclass(slots=True, frozen=True)
@@ -166,10 +149,14 @@ def build_oasis2_readiness_report(
     """Inspect a candidate OASIS-2 source root and summarize onboarding readiness."""
 
     resolved_settings = settings or AppSettings.from_env()
-    resolved_root, candidate_roots, source_resolution = resolve_oasis2_source_root(
+    layout = resolve_oasis2_source_layout(
         resolved_settings,
         source_root=source_root,
     )
+    resolved_root = layout.source_root
+    inspection_roots = list(layout.inspection_roots)
+    candidate_roots = list(layout.candidate_roots)
+    source_resolution = layout.source_resolution
     checks: list[OASIS2ReadinessCheck] = []
     notes: list[str] = [
         "This report is a future-dataset readiness aid. It does not build an OASIS-2 manifest or claim model compatibility by itself.",
@@ -177,7 +164,7 @@ def build_oasis2_readiness_report(
     ]
     recommendations: list[str] = []
 
-    if not resolved_root.exists():
+    if not inspection_roots and not resolved_root.exists():
         checks.append(
             OASIS2ReadinessCheck(
                 name="source_root",
@@ -242,6 +229,9 @@ def build_oasis2_readiness_report(
             recommendations=recommendations,
         )
 
+    if not inspection_roots:
+        inspection_roots = [resolved_root]
+
     total_directories = 0
     total_files = 0
     format_counts: Counter[str] = Counter()
@@ -253,42 +243,43 @@ def build_oasis2_readiness_report(
     subject_to_sessions: dict[str, set[str]] = defaultdict(set)
     subject_to_volume_containers: dict[str, set[str]] = defaultdict(set)
 
-    for path in resolved_root.rglob("*"):
-        if path.is_dir():
-            total_directories += 1
-            continue
-        if not path.is_file():
-            continue
-        total_files += 1
-        relative_path = path.relative_to(resolved_root)
-        relative_name = relative_path.as_posix()
-        suffix = _normalize_suffix(path)
-        format_counts[suffix] += 1
+    for inspection_root in inspection_roots:
+        for path in inspection_root.rglob("*"):
+            if path.is_dir():
+                total_directories += 1
+                continue
+            if not path.is_file():
+                continue
+            total_files += 1
+            relative_path = path.relative_to(inspection_root)
+            relative_name = f"{inspection_root.name}/{relative_path.as_posix()}"
+            suffix = _normalize_suffix(path)
+            format_counts[suffix] += 1
 
-        subject_match = SUBJECT_ID_PATTERN.search(relative_name)
-        session_match = SESSION_ID_PATTERN.search(relative_name)
-        normalized_subject: str | None = None
+            subject_match = SUBJECT_ID_PATTERN.search(relative_name)
+            session_match = SESSION_ID_PATTERN.search(relative_name)
+            normalized_subject: str | None = None
 
-        if subject_match:
-            normalized_subject = _normalize_oasis_identifier(subject_match.group(1))
-            subject_ids.add(normalized_subject)
-        if session_match:
-            normalized_session = _normalize_oasis_identifier(session_match.group(1))
-            session_ids.add(normalized_session)
-            session_subject = normalized_session.split("_MR", 1)[0]
-            subject_ids.add(session_subject)
-            subject_to_sessions[session_subject].add(normalized_session)
-            normalized_subject = session_subject
+            if subject_match:
+                normalized_subject = _normalize_oasis_identifier(subject_match.group(1))
+                subject_ids.add(normalized_subject)
+            if session_match:
+                normalized_session = _normalize_oasis_identifier(session_match.group(1))
+                session_ids.add(normalized_session)
+                session_subject = normalized_session.split("_MR", 1)[0]
+                subject_ids.add(session_subject)
+                subject_to_sessions[session_subject].add(normalized_session)
+                normalized_subject = session_subject
 
-        if suffix in SUPPORTED_3D_VOLUME_SUFFIXES:
-            if len(supported_volume_examples) < max_examples:
-                supported_volume_examples.append(relative_name)
-            if normalized_subject is not None:
-                subject_to_volume_containers[normalized_subject].add(relative_path.parent.as_posix())
-        elif suffix in METADATA_SUFFIXES and len(metadata_examples) < max_examples:
-            metadata_examples.append(relative_name)
-        elif suffix in DICOM_SUFFIXES and len(dicom_examples) < max_examples:
-            dicom_examples.append(relative_name)
+            if suffix in SUPPORTED_3D_VOLUME_SUFFIXES:
+                if len(supported_volume_examples) < max_examples:
+                    supported_volume_examples.append(relative_name)
+                if normalized_subject is not None:
+                    subject_to_volume_containers[normalized_subject].add(relative_path.parent.as_posix())
+            elif suffix in METADATA_SUFFIXES and len(metadata_examples) < max_examples:
+                metadata_examples.append(relative_name)
+            elif suffix in DICOM_SUFFIXES and len(dicom_examples) < max_examples:
+                dicom_examples.append(relative_name)
 
     longitudinal_subjects = {
         subject_id
@@ -315,6 +306,7 @@ def build_oasis2_readiness_report(
                 "source_root": str(resolved_root),
                 "source_resolution": source_resolution,
                 "candidate_roots": [str(path) for path in candidate_roots],
+                "inspection_roots": [str(path) for path in inspection_roots],
             },
         )
     )
@@ -440,6 +432,7 @@ def build_oasis2_readiness_report(
         "source_is_directory": True,
         "candidate_roots": [str(path) for path in candidate_roots],
         "source_root": str(resolved_root),
+        "inspection_roots": [str(path) for path in inspection_roots],
         "total_files": total_files,
         "total_directories": total_directories,
         "format_counts": dict(sorted(format_counts.items())),
@@ -519,4 +512,3 @@ def save_oasis2_readiness_report(
 
     md_path.write_text("\n".join(lines), encoding="utf-8")
     return json_path, md_path
-

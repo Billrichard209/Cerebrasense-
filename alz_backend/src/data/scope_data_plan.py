@@ -79,6 +79,8 @@ def build_scope_data_plan(settings: AppSettings | None = None) -> dict[str, Any]
     ]
     oasis2_candidates = [
         resolved_settings.collection_root / "OASIS2",
+        resolved_settings.collection_root / "OAS2_RAW_PART1",
+        resolved_settings.collection_root / "OAS2_RAW_PART2",
         workspace_root / "OASIS2",
         workspace_root / "datasets" / "oasis2" / "raw",
     ]
@@ -137,6 +139,8 @@ def build_scope_data_plan(settings: AppSettings | None = None) -> dict[str, Any]
         "AugmentedAlzheimerDataset/",
         "OASIS/",
         "OASIS2/",
+        "OAS2_RAW_PART1/",
+        "OAS2_RAW_PART2/",
         "datasets/raw/",
         "datasets/external/",
     ]
