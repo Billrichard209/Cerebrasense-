@@ -1,0 +1,23 @@
+# Python / virtualenv
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local tooling
+.sixth/
+
+# Backend-generated artifacts
+alz_backend/outputs/
+alz_backend/storage/*.sqlite3
+alz_backend/storage/*.db
+alz_backend/storage/*.log
+
+# Local raw datasets kept out of GitHub
+OriginalDataset/
+AugmentedAlzheimerDataset/
+OASIS/
+OASIS2/
+datasets/raw/
+datasets/external/

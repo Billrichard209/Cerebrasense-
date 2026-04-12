@@ -1,0 +1,28 @@
+# OASIS-1 baseline model configuration.
+#
+# Expected input tensor shape:
+# - per-sample MONAI image: [C, D, H, W]
+# - batched model input: [B, C, D, H, W]
+# - default transform target: [B, 1, 128, 128, 128]
+#
+# This is decision-support research software. The model output should be treated
+# as probability scoring for workflow support, not as a standalone diagnosis.
+
+dataset: oasis1
+task: binary_3d_mri_classification
+architecture: densenet121_3d
+class_names:
+  - nondemented
+  - demented
+expected_input_shape: [1, 1, 128, 128, 128]
+
+densenet:
+  name: densenet121
+  spatial_dims: 3
+  in_channels: 1
+  out_channels: 2
+  dropout_prob: 0.1
+
+embeddings:
+  enabled: false
+  hook_module_name: class_layers.flatten

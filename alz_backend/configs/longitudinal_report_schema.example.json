@@ -1,0 +1,107 @@
+{
+  "report_type": "longitudinal_tracking",
+  "subject_id": "OAS1_0002",
+  "generated_at": "2026-04-07T00:00:00+00:00",
+  "timepoint_count": 3,
+  "timepoints": [
+    {
+      "subject_id": "OAS1_0002",
+      "session_id": "OAS1_0002_MR1",
+      "visit_order": 1,
+      "summary_label": null,
+      "scan_timestamp": "2001-01-01",
+      "source_path": "scan_visit1.hdr",
+      "dataset": "oasis1",
+      "volumetric_features": {
+        "left_hippocampus_volume_mm3": 3200.0
+      },
+      "model_probabilities": {
+        "ad_like_probability": 0.22
+      },
+      "metadata": {}
+    }
+  ],
+  "timeline": [
+    {
+      "subject_id": "OAS1_0002",
+      "session_id": "OAS1_0002_MR1",
+      "visit_order": 1,
+      "scan_timestamp": "2001-01-01",
+      "timestamp_available": true,
+      "elapsed_days_from_baseline": 0.0,
+      "source_path": "scan_visit1.hdr",
+      "dataset": "oasis1",
+      "summary_label": null,
+      "volumetric_features": {
+        "left_hippocampus_volume_mm3": 3200.0
+      },
+      "model_probabilities": {
+        "ad_like_probability": 0.22
+      }
+    }
+  ],
+  "interval_changes": [
+    {
+      "feature_name": "left_hippocampus_volume_mm3",
+      "source": "volumetric",
+      "from_session_id": "OAS1_0002_MR1",
+      "to_session_id": "OAS1_0002_MR2",
+      "from_visit_order": 1,
+      "to_visit_order": 2,
+      "from_value": 3200.0,
+      "to_value": 3008.0,
+      "absolute_change": -192.0,
+      "percent_change": -6.0,
+      "elapsed_days": 365.0
+    }
+  ],
+  "trend_summaries": [
+    {
+      "feature_name": "left_hippocampus_volume_mm3",
+      "source": "volumetric",
+      "decline_direction": "decrease",
+      "normalization": "percent_from_baseline",
+      "trend_classification": "rapid_decline",
+      "slope_per_visit": -192.0,
+      "normalized_slope_per_visit": -6.0,
+      "normalized_slope_unit": "percent per visit",
+      "adverse_slope": 6.0,
+      "baseline_value": 3200.0,
+      "latest_value": 2816.0,
+      "timepoint_count": 3,
+      "thresholds": {
+        "stable_slope_threshold": 1.0,
+        "rapid_slope_threshold": 5.0
+      },
+      "warnings": []
+    }
+  ],
+  "alerts": [
+    {
+      "severity": "high",
+      "feature_name": "left_hippocampus_volume_mm3",
+      "trend_classification": "rapid_decline",
+      "message": "Research-threshold alert for review; not a diagnosis."
+    }
+  ],
+  "feature_configs": [
+    {
+      "feature_name": "left_hippocampus_volume_mm3",
+      "source": "volumetric",
+      "decline_direction": "decrease",
+      "normalization": "percent_from_baseline",
+      "stable_slope_threshold": 1.0,
+      "rapid_slope_threshold": 5.0,
+      "display_name": "Left hippocampal volume",
+      "unit": "percent per visit",
+      "notes": "Example research threshold, not clinical criteria."
+    }
+  ],
+  "warnings": [],
+  "limitations": [
+    "Trend categories use configurable research thresholds and are not clinical diagnostic criteria.",
+    "Missing timestamps are handled gracefully by falling back to visit/session/input order.",
+    "Volumetric trends are only as reliable as the supplied measurements or external segmentation outputs.",
+    "Model-probability trends are decision-support signals and should not be interpreted as diagnosis."
+  ]
+}

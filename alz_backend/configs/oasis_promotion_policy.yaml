@@ -1,0 +1,9 @@
+policy_name: oasis_research_gate_v1
+dataset: oasis1
+require_subject_safe_benchmark: true
+minimum_validation_auroc: 0.75
+minimum_test_auroc: 0.78
+minimum_test_sensitivity: 0.80
+maximum_review_required_rate: 0.50
+minimum_mean_calibrated_confidence: 0.65
+minimum_test_sample_count: 30

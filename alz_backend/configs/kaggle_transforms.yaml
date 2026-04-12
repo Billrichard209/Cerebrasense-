@@ -1,0 +1,58 @@
+load:
+  keys:
+    - image
+  reader_2d: null
+  reader_3d: NibabelReader
+  ensure_channel_first: true
+
+orientation:
+  enabled_for_3d: true
+  axcodes: RAS
+  labels:
+    - [L, R]
+    - [P, A]
+    - [I, S]
+
+spacing:
+  enabled_for_3d: true
+  pixdim: [1.0, 1.0, 1.0]
+  mode: bilinear
+
+intensity:
+  percentile_lower: 1.0
+  percentile_upper: 99.0
+  output_min: 0.0
+  output_max: 1.0
+  clip: true
+  normalize_nonzero: false
+
+channel:
+  force_single_channel: true
+  reduction: mean
+
+foreground:
+  enabled: false
+  source_key: image
+  margin_2d: [4, 4]
+  margin_3d: [4, 4, 4]
+  intensity_threshold: 0.0
+  allow_smaller: true
+
+spatial:
+  image_size_2d: [224, 224]
+  image_size_3d: [128, 128, 128]
+  final_op_2d: resize
+  final_op_3d: resize_with_pad_or_crop
+
+augmentation:
+  enabled: true
+  affine_probability_2d: 0.2
+  affine_probability_3d: 0.15
+  rotate_range_degrees_2d: 4.0
+  rotate_range_degrees_3d: [3.0, 3.0, 3.0]
+  scale_range_2d: [0.02, 0.02]
+  scale_range_3d: [0.02, 0.02, 0.02]
+  gaussian_noise_probability: 0.05
+  gaussian_noise_std: 0.01
+  horizontal_flip_probability_2d: 0.0
+  vertical_flip_probability_2d: 0.0

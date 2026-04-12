@@ -1,0 +1,105 @@
+"""Model specifications and MONAI model-family builders for backend experiments."""
+
+from .base_model import ModelMetadata, MonaiClassificationModelConfig, build_monai_densenet121
+from .factory import (
+    DenseNet3DConfig,
+    EmbeddingConfig,
+    ModelFactoryError,
+    OASISModelConfig,
+    build_densenet3d,
+    build_model,
+    default_oasis_model_config_path,
+    describe_model_config,
+    load_oasis_model_config,
+    with_embedding_output,
+)
+from .kaggle_model import KaggleMonaiModelConfig, build_kaggle_model_metadata, build_kaggle_monai_network
+from .oasis_model import (
+    OASISMonaiModelConfig,
+    build_oasis_baseline_model,
+    build_oasis_class_names,
+    build_oasis_model_metadata,
+    build_oasis_monai_network,
+)
+from .promotion_workflow import (
+    CandidatePreflightSummary,
+    PromotionCandidate,
+    PromotionHistoryEntry,
+    PromotionStudySummary,
+    load_promotion_candidates,
+    load_promotion_history_entries,
+    load_promotion_studies,
+)
+from .registry import ModelRegistryEntry, load_current_oasis_model_entry, promote_oasis_checkpoint
+from .review_monitoring import (
+    ActiveModelHoldAssessment,
+    OperationalHoldDecision,
+    OperationalHoldPolicy,
+    assess_active_oasis_model_hold,
+    evaluate_operational_hold,
+    load_oasis_hold_policy,
+)
+from .review_learning import (
+    ConfidenceBandReviewSummary,
+    ReviewLearningReport,
+    ReviewLearningSignal,
+    ThresholdTuningRecommendation,
+    analyze_review_learning,
+    summarize_review_learning,
+)
+from .validation_depth import (
+    ValidationDepthDashboard,
+    ValidationStudySummary,
+    build_validation_depth_dashboard,
+    load_validation_depth_studies,
+)
+
+__all__ = [
+    "DenseNet3DConfig",
+    "EmbeddingConfig",
+    "KaggleMonaiModelConfig",
+    "ModelFactoryError",
+    "ModelMetadata",
+    "ModelRegistryEntry",
+    "CandidatePreflightSummary",
+    "OperationalHoldDecision",
+    "OperationalHoldPolicy",
+    "MonaiClassificationModelConfig",
+    "OASISModelConfig",
+    "OASISMonaiModelConfig",
+    "ActiveModelHoldAssessment",
+    "ConfidenceBandReviewSummary",
+    "PromotionCandidate",
+    "PromotionHistoryEntry",
+    "PromotionStudySummary",
+    "ReviewLearningReport",
+    "ReviewLearningSignal",
+    "ThresholdTuningRecommendation",
+    "ValidationDepthDashboard",
+    "ValidationStudySummary",
+    "analyze_review_learning",
+    "assess_active_oasis_model_hold",
+    "build_densenet3d",
+    "build_kaggle_model_metadata",
+    "build_kaggle_monai_network",
+    "build_model",
+    "build_monai_densenet121",
+    "build_oasis_baseline_model",
+    "build_oasis_class_names",
+    "build_oasis_model_metadata",
+    "build_oasis_monai_network",
+    "build_validation_depth_dashboard",
+    "default_oasis_model_config_path",
+    "describe_model_config",
+    "load_oasis_model_config",
+    "load_current_oasis_model_entry",
+    "load_promotion_candidates",
+    "load_promotion_history_entries",
+    "load_promotion_studies",
+    "load_validation_depth_studies",
+    "load_oasis_hold_policy",
+    "promote_oasis_checkpoint",
+    "evaluate_operational_hold",
+    "summarize_review_learning",
+    "with_embedding_output",
+]

@@ -1,0 +1,48 @@
+run_name: oasis_baseline_colab_gpu
+epochs: 20
+device: cuda
+mixed_precision: true
+deterministic: true
+dry_run: false
+model_config_path:
+
+data:
+  batch_size: 4
+  num_workers: 2
+  cache_rate: 0.0
+  image_size: [64, 64, 64]
+  seed: 42
+  train_fraction: 0.7
+  val_fraction: 0.15
+  test_fraction: 0.15
+  weighted_sampling: false
+  max_train_batches:
+  max_val_batches:
+
+optimizer:
+  name: adamw
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  momentum: 0.9
+
+scheduler:
+  name: reduce_on_plateau
+  step_size: 5
+  gamma: 0.5
+  patience: 2
+  factor: 0.5
+
+loss:
+  name: cross_entropy
+
+early_stopping:
+  enabled: true
+  patience: 5
+  min_delta: 0.0
+  monitor: val_loss
+  mode: min
+
+checkpoint:
+  resume_from:
+  save_best: true
+  save_last: true

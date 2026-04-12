@@ -1,0 +1,2 @@
+image,label,label_name,subject_id,session_id,scan_timestamp,dataset,dataset_type,meta
+C:\path\to\external_cohort\subject_0001\scan.nii.gz,0,control,subject_0001,session_01,2024-01-15T09:30:00,adni_pilot,3d_volumes,"{""scanner"": ""3T"", ""site"": ""site_a""}"

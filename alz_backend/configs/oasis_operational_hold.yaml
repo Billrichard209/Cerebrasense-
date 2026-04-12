@@ -1,0 +1,8 @@
+policy_name: oasis_operational_hold_v1
+minimum_total_reviews: 5
+minimum_adjudicated_reviews: 5
+override_rate_threshold: 0.40
+false_negative_count_threshold: 3
+false_negative_fraction_threshold: 0.50
+critical_signal_levels:
+  - critical

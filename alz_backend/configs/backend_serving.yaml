@@ -1,0 +1,27 @@
+active_oasis_model_registry: outputs/model_registry/oasis_current_baseline.json
+default_device: cpu
+
+threshold_policy:
+  use_registry_recommended_threshold: true
+  fallback_threshold: 0.5
+
+confidence_policy:
+  temperature: 1.0
+  high_confidence_min: 0.85
+  medium_confidence_min: 0.65
+  high_entropy_max: 0.35
+  medium_entropy_max: 0.90
+
+scan_validation:
+  max_file_size_mb: 512
+  allowed_suffixes:
+    - .hdr
+    - .img
+    - .nii
+    - .nii.gz
+  enforce_workspace_boundary: false
+
+explanation_policy:
+  default_target_layer: auto
+  default_save_saliency: true
+  max_slice_overlays: 9

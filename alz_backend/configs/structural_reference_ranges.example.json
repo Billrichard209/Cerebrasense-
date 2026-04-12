@@ -1,0 +1,32 @@
+{
+  "notes": [
+    "These are example development-time reference-style ranges only.",
+    "They are placeholders for backend integration and must not be treated as validated clinical thresholds."
+  ],
+  "features": [
+    {
+      "feature_name": "left_hippocampus_volume_mm3",
+      "display_name": "Left Hippocampal Volume",
+      "min_value": 2500.0,
+      "max_value": 4200.0,
+      "unit": "mm3",
+      "notes": "Example placeholder range for backend testing only."
+    },
+    {
+      "feature_name": "right_hippocampus_volume_mm3",
+      "display_name": "Right Hippocampal Volume",
+      "min_value": 2500.0,
+      "max_value": 4200.0,
+      "unit": "mm3",
+      "notes": "Example placeholder range for backend testing only."
+    },
+    {
+      "feature_name": "brainsegvol",
+      "display_name": "Brain Segmentation Volume",
+      "min_value": 900000.0,
+      "max_value": 1400000.0,
+      "unit": "mm^3",
+      "notes": "Example placeholder range for backend testing only."
+    }
+  ]
+}
