@@ -28,6 +28,24 @@ def _mount_drive_if_requested(should_mount: bool) -> None:
     drive.mount("/content/drive")
 
 
+def _resolve_training_device(requested_device: str) -> tuple[str, bool]:
+    """Resolve a safe device and mixed-precision setting for the current Colab runtime."""
+
+    import torch
+
+    normalized = requested_device.strip().lower()
+    if normalized == "auto":
+        resolved = "cuda" if torch.cuda.is_available() else "cpu"
+    else:
+        resolved = normalized
+
+    if resolved == "cuda" and not torch.cuda.is_available():
+        print("Requested CUDA, but this Colab runtime does not expose a GPU. Falling back to CPU.")
+        resolved = "cpu"
+
+    return resolved, resolved == "cuda"
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Create the Colab CLI parser."""
 
@@ -39,6 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--kaggle-source-dir", type=Path, default=None)
     parser.add_argument("--mount-drive", action="store_true")
     parser.add_argument("--project-root", type=Path, default=None)
+    parser.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto")
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--image-size", nargs=3, type=int, default=None)
     parser.add_argument("--num-workers", type=int, default=None)
@@ -69,12 +88,13 @@ def main() -> None:
 
     config_path = args.config or (project_root / "configs" / "oasis_train_colab_gpu.yaml")
     training_cfg = load_research_oasis_training_config(config_path)
+    resolved_device, enable_mixed_precision = _resolve_training_device(args.device)
 
     if args.epochs is not None:
         training_cfg.epochs = int(args.epochs)
     training_cfg.run_name = args.run_name
-    training_cfg.device = "cuda"
-    training_cfg.mixed_precision = True
+    training_cfg.device = resolved_device
+    training_cfg.mixed_precision = enable_mixed_precision
     training_cfg.data = ResearchDataConfig(
         batch_size=int(args.batch_size) if args.batch_size is not None else training_cfg.data.batch_size,
         num_workers=int(args.num_workers) if args.num_workers is not None else training_cfg.data.num_workers,
@@ -88,6 +108,10 @@ def main() -> None:
         max_train_batches=training_cfg.data.max_train_batches,
         max_val_batches=training_cfg.data.max_val_batches,
     )
+
+    print(f"Using device={training_cfg.device} mixed_precision={training_cfg.mixed_precision}")
+    print(f"OASIS source={os.environ['ALZ_OASIS_SOURCE_DIR']}")
+    print(f"Training config={config_path}")
 
     result = run_oasis_experiment(
         OASISExperimentConfig(
