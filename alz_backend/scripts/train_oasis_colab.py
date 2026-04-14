@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 
@@ -90,12 +91,7 @@ def main() -> None:
     training_cfg = load_research_oasis_training_config(config_path)
     resolved_device, enable_mixed_precision = _resolve_training_device(args.device)
 
-    if args.epochs is not None:
-        training_cfg.epochs = int(args.epochs)
-    training_cfg.run_name = args.run_name
-    training_cfg.device = resolved_device
-    training_cfg.mixed_precision = enable_mixed_precision
-    training_cfg.data = ResearchDataConfig(
+    data_cfg = ResearchDataConfig(
         batch_size=int(args.batch_size) if args.batch_size is not None else training_cfg.data.batch_size,
         num_workers=int(args.num_workers)
         if args.num_workers is not None
@@ -109,6 +105,14 @@ def main() -> None:
         weighted_sampling=training_cfg.data.weighted_sampling,
         max_train_batches=training_cfg.data.max_train_batches,
         max_val_batches=training_cfg.data.max_val_batches,
+    )
+    training_cfg = replace(
+        training_cfg,
+        epochs=int(args.epochs) if args.epochs is not None else training_cfg.epochs,
+        run_name=args.run_name,
+        device=resolved_device,
+        mixed_precision=enable_mixed_precision,
+        data=data_cfg,
     )
 
     print(f"Using device={training_cfg.device} mixed_precision={training_cfg.mixed_precision}")
