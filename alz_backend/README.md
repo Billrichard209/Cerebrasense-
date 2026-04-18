@@ -61,6 +61,38 @@ Run the starter API:
 uvicorn src.api.main:app --reload
 ```
 
+## Local Colab Handoff
+
+After a Colab OASIS run is trained and exported to Google Drive, the clean local handoff is:
+
+1. Import the promoted run into local `outputs/`
+2. Use the imported registry-backed checkpoint for local scan inference
+
+From the workspace root you can run:
+
+```powershell
+.\import_promoted_oasis_run.cmd `
+  --source-run-root "C:\path\to\Drive\Cerebrasensecloud\training_runs\oasis\oasis_colab_full_v3_auroc_monitor" `
+  --source-registry-path "C:\path\to\Drive\Cerebrasensecloud\model_registry\oasis_current_baseline.json" `
+  --overwrite
+```
+
+Then run local inference through the active imported registry:
+
+```powershell
+.\predict_scan.cmd `
+  --scan-path "C:\path\to\scan.hdr" `
+  --device cpu `
+  --use-registry-threshold
+```
+
+Useful entrypoints:
+
+- [import_promoted_oasis_run.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/import_promoted_oasis_run.py)
+- [predict_scan.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/predict_scan.py)
+- [import_promoted_oasis_run.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/import_promoted_oasis_run.cmd)
+- [predict_scan.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/predict_scan.cmd)
+
 ## Dataset Policy
 
 ### OASIS-1

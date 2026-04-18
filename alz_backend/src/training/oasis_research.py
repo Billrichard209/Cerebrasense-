@@ -744,6 +744,13 @@ def run_research_oasis_training(
     stopped_early = False
     final_val_metrics: dict[str, Any] | None = None
     start_time = perf_counter()
+    print(
+        f"Starting OASIS training run {cfg.run_name} on device={device} "
+        f"for up to {cfg.epochs} epochs. run_root={paths.run_root}"
+    )
+    print(f"Epoch metrics will be written to {paths.epoch_metrics_csv_path}")
+    if cfg.checkpoint.resume_from is not None:
+        print(f"Resuming from checkpoint {cfg.checkpoint.resume_from} at epoch {start_epoch}")
 
     for epoch in range(start_epoch, cfg.epochs + 1):
         train_metrics = _run_epoch(
@@ -813,8 +820,24 @@ def run_research_oasis_training(
         if cfg.checkpoint.save_last:
             _save_checkpoint(paths.last_checkpoint_path, checkpoint_payload, torch)
 
+        improvement_status = "improved" if improved else f"no_improve={epochs_without_improvement}"
+        print(
+            f"[{cfg.run_name}] epoch {epoch}/{cfg.epochs} "
+            f"train_loss={train_metrics['loss']:.4f} "
+            f"val_loss={val_metrics['loss']:.4f} "
+            f"val_accuracy={val_metrics['accuracy']:.4f} "
+            f"val_auroc={val_metrics['auroc']:.4f} "
+            f"best_epoch={best_epoch} "
+            f"best_{cfg.early_stopping.monitor}={best_monitor_value:.4f} "
+            f"{improvement_status}"
+        )
+
         if cfg.early_stopping.enabled and epochs_without_improvement >= cfg.early_stopping.patience:
             stopped_early = True
+            print(
+                f"Early stopping triggered for run {cfg.run_name} at epoch {epoch}. "
+                f"Best epoch={best_epoch} best_{cfg.early_stopping.monitor}={best_monitor_value:.4f}"
+            )
             break
 
     if not rows or final_val_metrics is None:

@@ -1192,9 +1192,15 @@ def run_research_kaggle_training(
     epochs_without_improvement = 0
     stopped_early = False
     start_time = perf_counter()
+    print(
+        f"Starting Kaggle training run {cfg.run_name} on device={device} "
+        f"for up to {cfg.epochs} epochs. run_root={paths.run_root}"
+    )
+    print(f"Epoch metrics will be written to {paths.epoch_metrics_csv_path}")
+    if cfg.checkpoint.resume_from is not None:
+        print(f"Resuming from checkpoint {cfg.checkpoint.resume_from} at epoch {start_epoch}")
 
     for epoch in range(start_epoch, cfg.epochs + 1):
-        logger.info("Starting Kaggle epoch %d/%d for run %s", epoch, cfg.epochs, cfg.run_name)
         train_metrics = _run_epoch(
             loader=dataloaders.train_loader,
             model=model,
@@ -1268,9 +1274,25 @@ def run_research_kaggle_training(
         if cfg.checkpoint.save_last:
             _save_checkpoint(paths.last_checkpoint_path, checkpoint_payload, torch)
 
+        improvement_status = "improved" if improved else f"no_improve={epochs_without_improvement}"
+        print(
+            f"[{cfg.run_name}] epoch {epoch}/{cfg.epochs} "
+            f"train_loss={train_metrics['loss']:.4f} "
+            f"val_loss={val_metrics['loss']:.4f} "
+            f"val_accuracy={val_metrics['accuracy']:.4f} "
+            f"val_macro_f1={val_metrics['macro_f1']:.4f} "
+            f"val_macro_ovr_auroc={val_metrics['macro_ovr_auroc']:.4f} "
+            f"best_epoch={best_epoch} "
+            f"best_{cfg.early_stopping.monitor}={best_monitor_value:.4f} "
+            f"{improvement_status}"
+        )
+
         if cfg.early_stopping.enabled and epochs_without_improvement >= cfg.early_stopping.patience:
             stopped_early = True
-            logger.info("Stopping Kaggle run %s early at epoch %d", cfg.run_name, epoch)
+            print(
+                f"Early stopping triggered for run {cfg.run_name} at epoch {epoch}. "
+                f"Best epoch={best_epoch} best_{cfg.early_stopping.monitor}={best_monitor_value:.4f}"
+            )
             break
 
     if not rows:

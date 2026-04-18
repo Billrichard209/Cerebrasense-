@@ -30,7 +30,13 @@ from .promotion_workflow import (
     load_promotion_history_entries,
     load_promotion_studies,
 )
-from .registry import ModelRegistryEntry, load_current_oasis_model_entry, promote_oasis_checkpoint
+from .registry import (
+    ImportedOASISRunResult,
+    ModelRegistryEntry,
+    import_promoted_oasis_run,
+    load_current_oasis_model_entry,
+    promote_oasis_checkpoint,
+)
 from .review_monitoring import (
     ActiveModelHoldAssessment,
     OperationalHoldDecision,
@@ -57,6 +63,7 @@ from .validation_depth import (
 __all__ = [
     "DenseNet3DConfig",
     "EmbeddingConfig",
+    "ImportedOASISRunResult",
     "KaggleMonaiModelConfig",
     "ModelFactoryError",
     "ModelMetadata",
@@ -91,6 +98,7 @@ __all__ = [
     "build_validation_depth_dashboard",
     "default_oasis_model_config_path",
     "describe_model_config",
+    "import_promoted_oasis_run",
     "load_oasis_model_config",
     "load_current_oasis_model_entry",
     "load_promotion_candidates",

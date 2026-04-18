@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -63,6 +64,26 @@ class ModelRegistryEntry:
         return asdict(self)
 
 
+@dataclass(slots=True)
+class ImportedOASISRunResult:
+    """Result of importing a promoted Colab/Drive run into the local backend."""
+
+    run_name: str
+    local_run_root: Path
+    local_checkpoint_path: Path
+    local_registry_path: Path | None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-safe summary."""
+
+        return {
+            "run_name": self.run_name,
+            "local_run_root": str(self.local_run_root),
+            "local_checkpoint_path": str(self.local_checkpoint_path),
+            "local_registry_path": None if self.local_registry_path is None else str(self.local_registry_path),
+        }
+
+
 def _load_metrics(path: Path | None) -> dict[str, Any]:
     """Load a metrics JSON file if supplied."""
 
@@ -87,6 +108,32 @@ def _load_threshold_calibration(path: Path | None) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"Threshold calibration payload must be a JSON object: {path}")
     return payload
+
+
+def _load_registry_payload(path: Path) -> dict[str, Any]:
+    """Load a model registry payload from disk."""
+
+    if not path.exists():
+        raise FileNotFoundError(f"Registry file not found: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Registry payload must be a JSON object: {path}")
+    return payload
+
+
+def _resolve_registry_path_value(raw_path: str | None, *, settings: AppSettings) -> str | None:
+    """Resolve a registry path value into an absolute local path when possible."""
+
+    if raw_path in {None, ""}:
+        return raw_path
+    candidate = Path(str(raw_path))
+    if candidate.is_absolute():
+        return str(candidate)
+
+    parts = candidate.parts
+    if parts and parts[0].lower() == settings.project_root.name.lower():
+        return str((settings.workspace_root / candidate).resolve())
+    return str((settings.project_root / candidate).resolve())
 
 
 def promote_oasis_checkpoint(
@@ -180,6 +227,79 @@ def promote_oasis_checkpoint(
     return entry, resolved_output_path
 
 
+def import_promoted_oasis_run(
+    *,
+    source_run_root: str | Path,
+    source_registry_path: str | Path | None = None,
+    run_name: str | None = None,
+    registry_output_path: str | Path | None = None,
+    overwrite: bool = False,
+    settings: AppSettings | None = None,
+) -> ImportedOASISRunResult:
+    """Copy a Drive-exported OASIS run locally and rewrite registry paths for local serving."""
+
+    resolved_settings = settings or get_app_settings()
+    resolved_source_run_root = Path(source_run_root)
+    if not resolved_source_run_root.exists():
+        raise FileNotFoundError(f"Source run root not found: {resolved_source_run_root}")
+    if not resolved_source_run_root.is_dir():
+        raise ValueError(f"Source run root must be a directory: {resolved_source_run_root}")
+
+    resolved_run_name = run_name or resolved_source_run_root.name
+    local_run_root = resolved_settings.outputs_root / "runs" / "oasis" / resolved_run_name
+    if local_run_root.exists():
+        if not overwrite:
+            raise FileExistsError(
+                f"Local run root already exists: {local_run_root}. "
+                "Pass overwrite=True to replace it."
+            )
+        shutil.rmtree(local_run_root)
+
+    ensure_directory(local_run_root.parent)
+    shutil.copytree(resolved_source_run_root, local_run_root)
+
+    if source_registry_path is not None:
+        registry_payload = _load_registry_payload(Path(source_registry_path))
+        checkpoint_name = Path(str(registry_payload.get("checkpoint_path", "best_model.pt"))).name
+    else:
+        checkpoint_name = "best_model.pt"
+
+    local_checkpoint_path = local_run_root / "checkpoints" / checkpoint_name
+    if not local_checkpoint_path.exists():
+        raise FileNotFoundError(f"Expected imported checkpoint not found: {local_checkpoint_path}")
+
+    local_registry_path: Path | None = None
+    if source_registry_path is not None:
+        registry_payload = _load_registry_payload(Path(source_registry_path))
+        local_model_config = resolved_settings.project_root / "configs" / "oasis_model.yaml"
+        local_preprocessing_config = resolved_settings.project_root / "configs" / "oasis_transforms.yaml"
+        registry_payload["run_name"] = resolved_run_name
+        registry_payload["checkpoint_path"] = str(local_checkpoint_path)
+        registry_payload["model_config_path"] = (
+            str(local_model_config) if local_model_config.exists() else registry_payload.get("model_config_path")
+        )
+        registry_payload["preprocessing_config_path"] = (
+            str(local_preprocessing_config)
+            if local_preprocessing_config.exists()
+            else registry_payload.get("preprocessing_config_path")
+        )
+
+        local_registry_path = (
+            Path(registry_output_path)
+            if registry_output_path is not None
+            else resolved_settings.outputs_root / "model_registry" / "oasis_current_baseline.json"
+        )
+        ensure_directory(local_registry_path.parent)
+        local_registry_path.write_text(json.dumps(registry_payload, indent=2), encoding="utf-8")
+
+    return ImportedOASISRunResult(
+        run_name=resolved_run_name,
+        local_run_root=local_run_root,
+        local_checkpoint_path=local_checkpoint_path,
+        local_registry_path=local_registry_path,
+    )
+
+
 def load_current_oasis_model_entry(
     path: str | Path | None = None,
     *,
@@ -194,6 +314,14 @@ def load_current_oasis_model_entry(
         else resolved_settings.outputs_root / "model_registry" / "oasis_current_baseline.json"
     )
     payload = json.loads(resolved_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Registry payload must be a JSON object: {resolved_path}")
+    payload["checkpoint_path"] = _resolve_registry_path_value(payload.get("checkpoint_path"), settings=resolved_settings)
+    payload["model_config_path"] = _resolve_registry_path_value(payload.get("model_config_path"), settings=resolved_settings)
+    payload["preprocessing_config_path"] = _resolve_registry_path_value(
+        payload.get("preprocessing_config_path"),
+        settings=resolved_settings,
+    )
     return ModelRegistryEntry(**payload)
 
 
