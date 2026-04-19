@@ -428,13 +428,6 @@ def main() -> None:
         monitor=args.early_stopping_monitor or training_cfg.early_stopping.monitor,
         mode=args.early_stopping_mode or training_cfg.early_stopping.mode,
     )
-    resume_checkpoint = _maybe_resume_checkpoint(
-        outputs_root=outputs_root,
-        run_name=args.run_name,
-        enabled=bool(args.resume_if_available),
-        requested_signature=requested_signature,
-    )
-    checkpoint_cfg = replace(training_cfg.checkpoint, resume_from=resume_checkpoint)
     training_cfg = replace(
         training_cfg,
         epochs=int(args.epochs) if args.epochs is not None else training_cfg.epochs,
@@ -443,7 +436,6 @@ def main() -> None:
         mixed_precision=enable_mixed_precision,
         data=data_cfg,
         early_stopping=early_stopping_cfg,
-        checkpoint=checkpoint_cfg,
     )
     requested_signature = {
         "epochs": training_cfg.epochs,
@@ -458,6 +450,14 @@ def main() -> None:
         "early_stopping_patience": training_cfg.early_stopping.patience,
         "evaluate_splits": tuple(args.evaluate_splits),
     }
+    resume_checkpoint = _maybe_resume_checkpoint(
+        outputs_root=outputs_root,
+        run_name=args.run_name,
+        enabled=bool(args.resume_if_available),
+        requested_signature=requested_signature,
+    )
+    checkpoint_cfg = replace(training_cfg.checkpoint, resume_from=resume_checkpoint)
+    training_cfg = replace(training_cfg, checkpoint=checkpoint_cfg)
 
     print(f"project_root={project_root}")
     print(f"data_root={data_root}")
