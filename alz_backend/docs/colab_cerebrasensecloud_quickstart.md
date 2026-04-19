@@ -10,6 +10,7 @@ This project now has two hardened Colab entrypoints:
 
 - OASIS primary branch: [train.ipynb](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/train.ipynb)
 - Kaggle secondary branch: [kaggle_train.ipynb](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/kaggle_train.ipynb)
+- OASIS-2 bundle gate: [oasis2_train.ipynb](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/oasis2_train.ipynb)
 
 Both notebooks follow the same pattern:
 
@@ -155,6 +156,59 @@ python scripts/train_oasis_colab.py \
   --promote
 ```
 
+## OASIS-2 Remote Bundle Flow
+
+Use this for the uploaded OASIS-2 bundle under:
+
+```text
+/content/drive/MyDrive/Cerebrasensecloud/OASIS-2
+```
+
+Use [oasis2_train.ipynb](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/oasis2_train.ipynb)
+or the direct script below. The flow now does four things:
+
+- validates the uploaded bundle structure
+- copies `backend_reference/oasis2_metadata_template.csv` into the runtime
+- rebuilds the OASIS-2 manifest, metadata adapter output, split preview, and training-readiness report from the bundle
+- starts supervised training only when the label and split gates genuinely pass
+
+This means the remote path is now real, but it is still honest: if the metadata
+template is blank, the run stops with a saved blocked summary instead of faking
+training progress.
+
+On Windows or a synced local copy, validate the extracted bundle first:
+
+```powershell
+.\check_oasis2_upload_bundle.cmd --bundle-root "C:\path\to\Drive\Cerebrasensecloud\OASIS-2"
+```
+
+If you prefer the script directly in Colab:
+
+```bash
+cd /content/Cerebrasense-/alz_backend
+python scripts/train_oasis2_colab.py \
+  --project-root /content/Cerebrasense-/alz_backend \
+  --runtime-root /content/drive/MyDrive/Cerebrasensecloud/backend_runtime \
+  --bundle-root /content/drive/MyDrive/Cerebrasensecloud/OASIS-2 \
+  --run-name oasis2_colab_baseline \
+  --epochs 20 \
+  --batch-size 1 \
+  --gradient-accumulation-steps 1 \
+  --num-workers 0 \
+  --image-size 64 64 64 \
+  --seed 42 \
+  --split-seed 42 \
+  --device auto \
+  --stage-bundle-to-local
+```
+
+Keep the scope tight:
+
+- use the uploaded bundle as the source of truth for remote OASIS-2 prep
+- fill `backend_reference/oasis2_metadata_template.csv` before expecting supervised training to start
+- let `train_oasis2_colab.py` rebuild runtime manifests from the bundle instead of trusting stale local-path CSVs
+- do not merge OASIS-2 into the active OASIS-1 supervised evidence path implicitly
+
 ## Recommended Kaggle Flow
 
 Use [kaggle_train.ipynb](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/kaggle_train.ipynb).
@@ -216,11 +270,11 @@ Upload the whole `kaggle_alz_upload_bundle/` folder to Drive, not loose files fr
 - After a Colab restart, `/content` is gone, but `backend_runtime/` on Drive still keeps your persisted manifests, metrics, and checkpoints.
 - `backend_runtime/` is the canonical cloud source of truth for promoted OASIS runs.
 - OASIS and Kaggle remain separate evidence branches.
-- OASIS-2 remains a preparation and readiness branch, not a supervised training branch.
+- OASIS-2 now has a real remote bundle workflow, but supervised training still stays gated on explicit labels and safe split checks.
 
 ## Scope Reminder
 
 - OASIS is the primary supervised 3D structural MRI branch.
 - Kaggle is the secondary 2D comparison branch.
-- OASIS-2 is for structural and longitudinal preparation until labels and metadata are ready.
+- OASIS-2 is for structural and longitudinal preparation first, and only becomes a supervised branch after the metadata template is filled and the training-readiness gate passes.
 - Do not merge Kaggle and OASIS evidence implicitly.

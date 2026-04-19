@@ -90,6 +90,9 @@ These are the main command/launcher entrypoints for the current phase:
 - [build_oasis2_metadata_template.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_metadata_template.cmd)
 - [build_oasis2_metadata_adapter.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_metadata_adapter.cmd)
 - [build_oasis2_split_policy.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_split_policy.cmd)
+- [check_oasis2_training_readiness.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/check_oasis2_training_readiness.cmd)
+- [build_oasis2_supervised_splits.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_supervised_splits.cmd)
+- [train_oasis2.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/train_oasis2.cmd)
 - [build_oasis2_upload_bundle.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_upload_bundle.cmd)
 
 ## Best Next Steps
@@ -99,8 +102,8 @@ The best next moves for the project are:
 1. Keep the current local OASIS baseline active and use the new comparison/presentation artifacts for demos and status reviews.
 2. Refresh the Kaggle branch once as a secondary benchmark, but do not let it replace the OASIS promotion path.
 3. Use repeated-split refreshes or targeted error analysis if you do more OASIS research before adding new datasets.
-4. Open the OASIS-2 readiness/onboarding branch only after the OASIS productization path feels stable.
-5. Keep OASIS-2 local until a real Colab or remote OASIS-2 workflow exists; do not upload it to Drive just for onboarding.
+4. When OASIS-2 labels are ready, run the new readiness gate and supervised split builder before attempting any OASIS-2 training run.
+5. Use the uploaded OASIS-2 bundle with the new remote bundle gate, but keep OASIS-2 training blocked until the metadata template is filled and the readiness gate passes.
 
 ## Simple Rule
 

@@ -8,7 +8,11 @@ from pathlib import Path
 import pandas as pd
 
 from src.configs.runtime import AppSettings
-from src.data.oasis2_upload_bundle import build_oasis2_upload_bundle
+from src.data.oasis2_upload_bundle import (
+    build_oasis2_upload_bundle,
+    inspect_oasis2_upload_bundle,
+    save_oasis2_upload_bundle_report,
+)
 
 
 def _build_settings(tmp_path: Path) -> AppSettings:
@@ -138,3 +142,107 @@ def test_build_oasis2_upload_bundle_materializes_selected_session_files(tmp_path
     assert (result.bundle_root / "backend_reference" / "oasis2_metadata_adapter_status.json").exists()
     assert (result.bundle_root / "backend_reference" / "oasis2_subject_safe_split_plan.csv").exists()
     assert (result.bundle_root / "README.md").exists()
+
+
+def test_inspect_oasis2_upload_bundle_reports_remote_ready_bundle(tmp_path: Path) -> None:
+    """A freshly built bundle should validate cleanly for remote review use."""
+
+    settings = _build_settings(tmp_path)
+    source_root = settings.collection_root
+    hdr_path = source_root / "OAS2_RAW_PART1" / "OAS2_0001_MR1" / "RAW" / "mpr-1.nifti.hdr"
+    img_path = hdr_path.with_suffix(".img")
+    hdr_path.parent.mkdir(parents=True, exist_ok=True)
+    hdr_path.write_text("hdr", encoding="utf-8")
+    img_path.write_text("img", encoding="utf-8")
+
+    interim_root = settings.data_root / "interim"
+    interim_root.mkdir(parents=True, exist_ok=True)
+    manifest_frame = pd.DataFrame(
+        [
+            {
+                "image": str(hdr_path),
+                "label": None,
+                "label_name": None,
+                "subject_id": "OAS2_0001",
+                "session_id": "OAS2_0001_MR1",
+                "visit_number": 1,
+                "scan_timestamp": None,
+                "dataset": "oasis2_raw",
+                "dataset_type": "3d_volumes",
+                "meta": json.dumps(
+                    {
+                        "paired_image": str(img_path),
+                        "selected_acquisition_id": "mpr-1",
+                        "acquisition_count": 1,
+                    }
+                ),
+            }
+        ]
+    )
+    manifest_frame.to_csv(interim_root / "oasis2_session_manifest.csv", index=False)
+    manifest_frame.rename(columns={"image": "source_path", "visit_number": "visit_order"}).assign(
+        record_type="oasis2_session"
+    ).to_csv(interim_root / "oasis2_longitudinal_records.csv", index=False)
+    pd.DataFrame(
+        [{"subject_id": "OAS2_0001", "session_count": 1, "first_visit": 1, "last_visit": 1, "session_ids": "OAS2_0001_MR1"}]
+    ).to_csv(interim_root / "oasis2_subject_summary.csv", index=False)
+    pd.DataFrame(
+        [
+            {
+                "image": str(hdr_path),
+                "paired_image": str(img_path),
+                "label": None,
+                "label_name": None,
+                "subject_id": "OAS2_0001",
+                "session_id": "OAS2_0001_MR1",
+                "visit_number": 1,
+                "scan_timestamp": None,
+                "dataset": "oasis2_raw",
+                "dataset_type": "3d_volumes",
+                "source_part": "OAS2_RAW_PART1",
+                "acquisition_id": "mpr-1",
+                "volume_format": "analyze_pair",
+                "meta": "{}",
+            }
+        ]
+    ).to_csv(interim_root / "oasis2_raw_inventory.csv", index=False)
+    (interim_root / "oasis2_raw_inventory_dropped_rows.csv").write_text("reason\n", encoding="utf-8")
+    (interim_root / "oasis2_raw_inventory_summary.json").write_text("{}", encoding="utf-8")
+    (interim_root / "oasis2_session_manifest_summary.json").write_text("{}", encoding="utf-8")
+    (interim_root / "oasis2_metadata_template.csv").write_text("subject_id,session_id\nOAS2_0001,OAS2_0001_MR1\n", encoding="utf-8")
+    (interim_root / "oasis2_metadata_template_summary.json").write_text("{}", encoding="utf-8")
+    (interim_root / "oasis2_labeled_prep_manifest.csv").write_text("image,label\n", encoding="utf-8")
+    (interim_root / "oasis2_subject_safe_split_plan.csv").write_text("subject_id,subject_safe_bucket\nOAS2_0001,0\n", encoding="utf-8")
+    (interim_root / "oasis2_subject_safe_split_plan_summary.json").write_text("{}", encoding="utf-8")
+
+    readiness_root = settings.outputs_root / "reports" / "readiness"
+    readiness_root.mkdir(parents=True, exist_ok=True)
+    (readiness_root / "oasis2_readiness.json").write_text("{}", encoding="utf-8")
+    (readiness_root / "oasis2_readiness.md").write_text("# ready", encoding="utf-8")
+    onboarding_root = settings.outputs_root / "reports" / "onboarding"
+    onboarding_root.mkdir(parents=True, exist_ok=True)
+    (onboarding_root / "oasis2_adapter_status.json").write_text("{}", encoding="utf-8")
+    (onboarding_root / "oasis2_adapter_status.md").write_text("# adapter", encoding="utf-8")
+    (onboarding_root / "oasis2_metadata_adapter_status.json").write_text("{}", encoding="utf-8")
+    (onboarding_root / "oasis2_metadata_adapter_status.md").write_text("# metadata", encoding="utf-8")
+    (onboarding_root / "oasis2_subject_safe_split_plan.md").write_text("# split", encoding="utf-8")
+
+    result = build_oasis2_upload_bundle(
+        settings=settings,
+        source_root=source_root,
+        materialize_mode="copy",
+        output_root=tmp_path / "bundle",
+    )
+
+    report = inspect_oasis2_upload_bundle(settings=settings, bundle_root=result.bundle_root)
+    payload = report.to_payload()
+
+    assert report.overall_status == "pass"
+    assert payload["bundle_summary"]["included_session_count"] == 1
+    assert any(check["name"] == "backend_reference_core" and check["status"] == "pass" for check in payload["checks"])
+
+    json_path, md_path = save_oasis2_upload_bundle_report(report, settings, file_stem="unit_oasis2_upload_bundle_status")
+
+    assert json_path.exists()
+    assert md_path.exists()
+    assert "OASIS-2 Upload Bundle Status" in md_path.read_text(encoding="utf-8")

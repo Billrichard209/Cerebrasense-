@@ -153,9 +153,90 @@ This step:
 - marks conservative `holdout_candidate` and `development_candidate` roles
 - avoids pretending that true train/val/test splits already exist
 
+## Check Training Readiness
+
+After the metadata adapter and split preview both exist, run the supervised
+training gate:
+
+```powershell
+.\check_oasis2_training_readiness.cmd
+```
+
+This step:
+
+- checks that every OASIS-2 session has both `label` and `label_name`
+- enforces the current binary label policy `{0, 1}`
+- verifies that the split plan covers every labeled `split_group_hint`
+- attempts to materialize real subject-safe `train/val/test` manifests
+- writes `oasis2_training_readiness.json` and `.md` under `outputs/reports/onboarding/`
+
+If the report says `fail`, do not start training yet. Fix the metadata/template
+coverage first and rerun the gate.
+
+## Build Supervised Split Manifests
+
+When the readiness gate passes, materialize the supervised OASIS-2 manifests:
+
+```powershell
+.\build_oasis2_supervised_splits.cmd
+```
+
+This step writes one report folder under `outputs/reports/` that contains:
+
+- `oasis2_supervised_group_assignments.csv`
+- `oasis2_train_manifest.csv`
+- `oasis2_val_manifest.csv`
+- `oasis2_test_manifest.csv`
+- `oasis2_supervised_split_summary.json`
+- `oasis2_supervised_split_summary.md`
+
+## Train OASIS-2
+
+Once the readiness gate passes, start the local research training runner with:
+
+```powershell
+.\train_oasis2.cmd
+```
+
+Or start with a tiny pipeline check:
+
+```powershell
+.\train_oasis2.cmd --dry-run
+```
+
+The training runner re-checks supervised readiness before it touches the model,
+so it fails fast and points you at the saved readiness report if labels or split
+coverage are still incomplete.
+
+## Use The Uploaded Drive Bundle
+
+If the uploaded Drive bundle now exists under:
+
+```text
+/content/drive/MyDrive/Cerebrasensecloud/OASIS-2
+```
+
+use the remote bundle gate instead of stitching the remote steps together by
+hand. The canonical Colab entrypoints are:
+
+- [oasis2_train.ipynb](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/oasis2_train.ipynb)
+- `scripts/train_oasis2_colab.py`
+
+That remote runner:
+
+- validates the extracted upload bundle
+- copies `backend_reference/oasis2_metadata_template.csv` into the runtime
+- rebuilds the OASIS-2 manifest, metadata adapter output, and split plan from the bundle
+- checks supervised readiness honestly
+- starts training only when the label and split gates both pass
+
+If labels are still missing, the run stops with a saved blocked summary instead
+of pretending that training has started.
+
 ## When To Upload OASIS-2 To Google Drive
 
-Do **not** upload OASIS-2 to Google Drive yet if we are only doing:
+Do **not** upload OASIS-2 to Google Drive just for local-only onboarding if we
+are only doing:
 
 - local readiness checks
 - raw inventory generation
@@ -168,16 +249,15 @@ Upload OASIS-2 to Drive only when one of these becomes true:
 - we need a remote runtime to preprocess or evaluate OASIS-2
 - we have a dedicated OASIS-2 adapter/split workflow that actually needs cloud execution
 
-That condition is now met at the bundle level: the repo can generate a portable
-OASIS-2 upload bundle that includes the current onboarding, metadata, and
-subject-safe split-planning artifacts. When you decide to upload, upload the
-generated bundle folder rather than the whole raw workspace.
+That condition is now met at the bundle level. The repo can generate a portable
+OASIS-2 upload bundle, and the remote bundle gate now exists too. When you
+upload, upload the generated bundle folder rather than the whole raw workspace.
 
 For the current phase, the correct posture is:
 
-- keep OASIS-2 **local**
 - keep OASIS-1 as the active evidence/training path
-- treat OASIS-2 as the next onboarding branch, not a Drive-backed training dataset
+- use the uploaded OASIS-2 bundle for remote preparation and gated readiness checks
+- do not expect supervised OASIS-2 training to start until `diagnosis_label` and `diagnosis_label_name` are filled for every session
 
 ## Saved Outputs
 
@@ -198,6 +278,8 @@ Typical artifacts:
 - `oasis2_longitudinal_records.csv`
 - `oasis2_subject_summary.csv`
 - `oasis2_session_manifest_summary.json`
+- `oasis2_training_readiness.json`
+- `oasis2_training_readiness.md`
 
 ## How To Read The Result
 

@@ -137,10 +137,15 @@ Useful entrypoints:
 - [build_oasis_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_presentation_summary.py)
 - [build_project_status_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_project_status_bundle.py)
 - [build_oasis2_onboarding_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis2_onboarding_bundle.py)
+- [check_oasis2_upload_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/check_oasis2_upload_bundle.py)
 - [check_oasis2_adapter.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/check_oasis2_adapter.py)
 - [build_oasis2_metadata_template.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis2_metadata_template.py)
 - [check_oasis2_metadata_adapter.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/check_oasis2_metadata_adapter.py)
 - [build_oasis2_split_policy.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis2_split_policy.py)
+- [check_oasis2_training_readiness.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/check_oasis2_training_readiness.py)
+- [build_oasis2_supervised_splits.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis2_supervised_splits.py)
+- [train_oasis2.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/train_oasis2.py)
+- [train_oasis2_colab.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/train_oasis2_colab.py)
 - [predict_scan.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/predict_scan.py)
 - [import_promoted_oasis_run.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/import_promoted_oasis_run.cmd)
 - [check_oasis_productization.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/check_oasis_productization.cmd)
@@ -149,10 +154,15 @@ Useful entrypoints:
 - [build_oasis_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_presentation_summary.cmd)
 - [build_project_status_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_project_status_bundle.cmd)
 - [build_oasis2_onboarding_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_onboarding_bundle.cmd)
+- [check_oasis2_upload_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/check_oasis2_upload_bundle.cmd)
 - [build_oasis2_adapter.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_adapter.cmd)
 - [build_oasis2_metadata_template.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_metadata_template.cmd)
 - [build_oasis2_metadata_adapter.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_metadata_adapter.cmd)
 - [build_oasis2_split_policy.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_split_policy.cmd)
+- [check_oasis2_training_readiness.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/check_oasis2_training_readiness.cmd)
+- [build_oasis2_supervised_splits.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_supervised_splits.cmd)
+- [train_oasis2.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/train_oasis2.cmd)
+- [train_oasis2_colab.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/train_oasis2_colab.cmd)
 - [predict_scan.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/predict_scan.cmd)
 
 ## Dataset Policy
@@ -177,10 +187,12 @@ OASIS-2 is the most natural future expansion of the current scope. It fits the e
 - repeated-scan structural trend analysis
 - future split logic for visit-aware evaluation
 
-For the current phase, OASIS-2 should stay **local-first**. Use the readiness,
-inventory, unlabeled manifest, and onboarding bundle flows locally first. Do
-not upload OASIS-2 to Google Drive until we actually open a Colab or other
-remote workflow that needs OASIS-2 outside this machine.
+OASIS-2 now has a real uploaded-bundle workflow too. The supported remote path
+is the extracted Drive bundle under `Cerebrasensecloud/OASIS-2`, driven by
+`oasis2_train.ipynb` or `train_oasis2_colab.py`. That runner validates the
+bundle, copies `backend_reference/oasis2_metadata_template.csv` into the
+runtime, rebuilds manifests from the bundle itself, and starts training only
+when the label and subject-safe split gates pass.
 
 The first dedicated adapter step now exists too: use `build_oasis2_adapter.cmd`
 to validate the unlabeled manifest adapter contract before any future OASIS-2
@@ -194,6 +206,23 @@ After metadata mapping, the next safe planning step is subject-safe split
 preview generation. That preview is deterministic and patient-safe, but it still
 should not be mistaken for final supervised training splits until label coverage
 and class balance are reviewed.
+
+Once the metadata adapter and split preview both exist, use
+`check_oasis2_training_readiness.cmd` to verify whether the current labeled-prep
+manifest is honestly trainable. That readiness gate checks complete label
+coverage, binary label policy compatibility, and whether the repo can materialize
+real subject-safe train/val/test manifests.
+
+Only after that gate passes should you run `build_oasis2_supervised_splits.cmd`
+and `train_oasis2.cmd`. The training runner also enforces the same readiness
+gate, so it will stop early and point at the saved report instead of starting an
+invalid run.
+
+If an OASIS-2 upload bundle already exists under Drive or another synced root,
+validate the extracted bundle before remote use with `check_oasis2_upload_bundle.cmd`.
+Then use `train_oasis2_colab.py` or `oasis2_train.ipynb` as the canonical remote
+entrypoint. The remote runner will stop cleanly with a saved blocked summary
+until `diagnosis_label` and `diagnosis_label_name` are filled for every session.
 
 ### Kaggle
 

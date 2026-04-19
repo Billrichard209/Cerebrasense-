@@ -72,6 +72,16 @@ If you use the current engineered path, the next manual step on your side is:
 1. run `.\build_oasis2_upload_bundle.cmd`
 2. wait for the bundle to finish under `alz_backend/outputs/exports/oasis2_upload_bundle/`
 3. upload that whole folder to Drive
+4. validate the finished bundle locally or after Drive sync with:
+
+```powershell
+.\check_oasis2_upload_bundle.cmd --bundle-root "C:\path\to\oasis2_upload_bundle"
+```
+
+That writes:
+
+- `alz_backend/outputs/reports/onboarding/oasis2_upload_bundle_status.json`
+- `alz_backend/outputs/reports/onboarding/oasis2_upload_bundle_status.md`
 
 ## What Not To Upload
 
@@ -92,7 +102,8 @@ Example:
 /content/drive/MyDrive/cerebrasense/data/oasis2/upload_bundle
 ```
 
-Then rebuild the raw inventory or unlabeled session manifest there if needed.
+Then rebuild the raw inventory or unlabeled session manifest there if needed, using
+the bundle root itself as `ALZ_OASIS2_SOURCE_DIR` or `--source-root`.
 
 The uploaded bundle now also carries:
 
