@@ -168,6 +168,11 @@ Upload OASIS-2 to Drive only when one of these becomes true:
 - we need a remote runtime to preprocess or evaluate OASIS-2
 - we have a dedicated OASIS-2 adapter/split workflow that actually needs cloud execution
 
+That condition is now met at the bundle level: the repo can generate a portable
+OASIS-2 upload bundle that includes the current onboarding, metadata, and
+subject-safe split-planning artifacts. When you decide to upload, upload the
+generated bundle folder rather than the whole raw workspace.
+
 For the current phase, the correct posture is:
 
 - keep OASIS-2 **local**

@@ -1,0 +1,4 @@
+@echo off
+setlocal
+set "ROOT=%~dp0alz_backend"
+"%ROOT%\.venv\Scripts\python.exe" "%ROOT%\scripts\build_oasis2_upload_bundle.py" %*

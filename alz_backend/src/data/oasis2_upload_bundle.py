@@ -182,6 +182,12 @@ def _write_bundle_readme(bundle_root: Path, *, materialize_mode: str) -> None:
         "- `backend_reference/oasis2_raw_inventory.csv`",
         "- `backend_reference/oasis2_raw_inventory_summary.json`",
         "- `backend_reference/oasis2_session_manifest_summary.json`",
+        "- `backend_reference/oasis2_metadata_template.csv`",
+        "- `backend_reference/oasis2_metadata_template_summary.json`",
+        "- `backend_reference/oasis2_labeled_prep_manifest.csv`",
+        "- `backend_reference/oasis2_metadata_adapter_status.json`",
+        "- `backend_reference/oasis2_subject_safe_split_plan.csv`",
+        "- `backend_reference/oasis2_subject_safe_split_plan_summary.json`",
         "- `backend_reference/oasis2_session_index.csv`",
         "- `backend_reference/oasis2_upload_bundle_summary.json`",
         "",
@@ -190,12 +196,14 @@ def _write_bundle_readme(bundle_root: Path, *, materialize_mode: str) -> None:
         "- Upload this whole bundle folder to Google Drive.",
         "- Keep it extracted on Drive for Colab use.",
         "- When using it later, point `ALZ_OASIS2_SOURCE_DIR` or --source-root to this bundle root.",
+        "- The metadata template and split-plan files are planning artifacts; they do not make OASIS-2 training-ready by themselves.",
         "",
         "## Notes",
         "",
         f"- local_materialize_mode: {materialize_mode}",
         "- This is an unlabeled structural/longitudinal preparation bundle, not a supervised training set.",
         "- The backend can rebuild the unlabeled session manifest from this bundle if needed.",
+        "- The bundle now includes metadata-mapping and subject-safe split-planning artifacts so remote review can start from the same local state.",
     ]
     readme_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -251,6 +259,11 @@ def build_oasis2_upload_bundle(
         "oasis2_raw_inventory_summary.json",
         "oasis2_subject_summary.csv",
         "oasis2_session_manifest_summary.json",
+        "oasis2_metadata_template.csv",
+        "oasis2_metadata_template_summary.json",
+        "oasis2_labeled_prep_manifest.csv",
+        "oasis2_subject_safe_split_plan.csv",
+        "oasis2_subject_safe_split_plan_summary.json",
     )
     for name in reference_copy_names:
         source_path = resolved_settings.data_root / "interim" / name
@@ -266,10 +279,22 @@ def build_oasis2_upload_bundle(
 
     readiness_json = resolved_settings.outputs_root / "reports" / "readiness" / "oasis2_readiness.json"
     readiness_md = resolved_settings.outputs_root / "reports" / "readiness" / "oasis2_readiness.md"
+    onboarding_reference_names = (
+        "oasis2_adapter_status.json",
+        "oasis2_adapter_status.md",
+        "oasis2_metadata_adapter_status.json",
+        "oasis2_metadata_adapter_status.md",
+        "oasis2_subject_safe_split_plan.md",
+    )
     if readiness_json.exists():
         shutil.copy2(readiness_json, backend_reference_root / readiness_json.name)
     if readiness_md.exists():
         shutil.copy2(readiness_md, backend_reference_root / readiness_md.name)
+    onboarding_root = resolved_settings.outputs_root / "reports" / "onboarding"
+    for name in onboarding_reference_names:
+        source_path = onboarding_root / name
+        if source_path.exists():
+            shutil.copy2(source_path, backend_reference_root / source_path.name)
 
     summary_path = backend_reference_root / "oasis2_upload_bundle_summary.json"
     summary_payload = {
@@ -282,10 +307,12 @@ def build_oasis2_upload_bundle(
         "materialized_file_count": len(source_files),
         "missing_reference_count": len(missing_references),
         "inspection_roots": [str(path) for path in layout.inspection_roots],
+        "backend_reference_files": sorted(path.name for path in backend_reference_root.iterdir() if path.is_file()),
         "notes": [
             "This bundle preserves one selected structural acquisition per OASIS-2 session.",
             "Use the bundle root as ALZ_OASIS2_SOURCE_DIR when rebuilding the unlabeled session manifest elsewhere.",
             "This bundle is intended for preprocessing, structural workflows, and longitudinal preparation, not supervised classification.",
+            "Metadata and split-planning artifacts are included for remote review, but OASIS-2 still requires explicit labels and subject-safe split decisions before supervised training.",
         ],
     }
     summary_path.write_text(json.dumps(summary_payload, indent=2), encoding="utf-8")

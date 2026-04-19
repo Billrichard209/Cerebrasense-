@@ -38,6 +38,12 @@ alz_backend/outputs/exports/oasis2_upload_bundle/
 - `backend_reference/oasis2_raw_inventory.csv`
 - `backend_reference/oasis2_raw_inventory_summary.json`
 - `backend_reference/oasis2_session_manifest_summary.json`
+- `backend_reference/oasis2_metadata_template.csv`
+- `backend_reference/oasis2_metadata_template_summary.json`
+- `backend_reference/oasis2_labeled_prep_manifest.csv`
+- `backend_reference/oasis2_metadata_adapter_status.json`
+- `backend_reference/oasis2_subject_safe_split_plan.csv`
+- `backend_reference/oasis2_subject_safe_split_plan_summary.json`
 - `backend_reference/oasis2_session_index.csv`
 - `backend_reference/oasis2_upload_bundle_summary.json`
 - `backend_reference/oasis2_readiness.json`
@@ -61,6 +67,12 @@ MyDrive/
 
 Upload the whole generated bundle folder.
 
+If you use the current engineered path, the next manual step on your side is:
+
+1. run `.\build_oasis2_upload_bundle.cmd`
+2. wait for the bundle to finish under `alz_backend/outputs/exports/oasis2_upload_bundle/`
+3. upload that whole folder to Drive
+
 ## What Not To Upload
 
 Do not upload:
@@ -81,6 +93,15 @@ Example:
 ```
 
 Then rebuild the raw inventory or unlabeled session manifest there if needed.
+
+The uploaded bundle now also carries:
+
+- the metadata template
+- the metadata adapter status
+- the labeled-prep manifest candidate
+- the subject-safe split preview
+
+So remote review can start from the same local onboarding state.
 
 ## Scope Reminder
 
