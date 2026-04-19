@@ -121,6 +121,73 @@ def test_import_promoted_oasis_run_copies_run_and_rewrites_registry_paths(tmp_pa
     assert loaded.recommended_threshold == 0.42
 
 
+def test_import_promoted_oasis_run_supports_canonical_runtime_root(tmp_path: Path) -> None:
+    """Canonical backend_runtime imports should resolve run and registry paths automatically."""
+
+    settings = _settings(tmp_path)
+    runtime_root = tmp_path / "drive_sync" / "backend_runtime"
+    source_run_root = runtime_root / "outputs" / "runs" / "oasis" / "oasis_colab_full_v3_auroc_monitor"
+    source_checkpoint = source_run_root / "checkpoints" / "best_model.pt"
+    source_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+    source_checkpoint.write_bytes(b"checkpoint")
+
+    source_registry_path = runtime_root / "outputs" / "model_registry" / "oasis_current_baseline.json"
+    source_registry_path.parent.mkdir(parents=True, exist_ok=True)
+    source_registry_path.write_text(
+        json.dumps(
+            {
+                "registry_version": "1.0",
+                "model_id": "oasis_current_baseline",
+                "dataset": "oasis1",
+                "run_name": "oasis_colab_full_v3_auroc_monitor",
+                "checkpoint_path": "/content/drive/MyDrive/Cerebrasensecloud/backend_runtime/outputs/runs/oasis/oasis_colab_full_v3_auroc_monitor/checkpoints/best_model.pt",
+                "model_config_path": "/content/Cerebrasense-/alz_backend/configs/oasis_model.yaml",
+                "preprocessing_config_path": "/content/Cerebrasense-/alz_backend/configs/oasis_transforms.yaml",
+                "image_size": [64, 64, 64],
+                "promoted_at_utc": "2026-01-01T00:00:00+00:00",
+                "decision_support_only": True,
+                "clinical_disclaimer": "Decision-support only, not a diagnosis.",
+                "recommended_threshold": 0.45,
+                "default_threshold": 0.5,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    local_model_config = settings.project_root / "configs" / "oasis_model.yaml"
+    local_model_config.parent.mkdir(parents=True, exist_ok=True)
+    local_model_config.write_text("dataset: oasis1\n", encoding="utf-8")
+    local_preprocessing = settings.project_root / "configs" / "oasis_transforms.yaml"
+    local_preprocessing.write_text("spatial:\n  spatial_size: [64, 64, 64]\n", encoding="utf-8")
+
+    result = import_promoted_oasis_run(
+        source_runtime_root=runtime_root,
+        settings=settings,
+    )
+
+    assert result.run_name == "oasis_colab_full_v3_auroc_monitor"
+    assert result.local_run_root.exists()
+    assert result.local_checkpoint_path.exists()
+    assert result.local_registry_path is not None and result.local_registry_path.exists()
+
+
+def test_import_promoted_oasis_run_runtime_root_missing_fails_clearly(tmp_path: Path) -> None:
+    """Missing backend_runtime paths should raise a direct runtime-root error."""
+
+    settings = _settings(tmp_path)
+    missing_runtime_root = tmp_path / "missing_drive_sync" / "backend_runtime"
+
+    try:
+        import_promoted_oasis_run(
+            source_runtime_root=missing_runtime_root,
+            settings=settings,
+        )
+    except FileNotFoundError as exc:
+        assert "Source runtime root not found" in str(exc)
+    else:
+        raise AssertionError("Expected missing runtime root to raise FileNotFoundError")
+
+
 def test_load_current_oasis_model_entry_resolves_workspace_relative_paths(tmp_path: Path) -> None:
     """Legacy registry entries using workspace-relative `alz_backend/...` paths should load cleanly."""
 

@@ -107,6 +107,30 @@ That notebook already handles:
 - safe resume or reuse of the same `RUN_NAME`
 - threshold calibration and promotion for the OASIS baseline
 
+After the promoted run is synced back to Windows, the canonical local handoff is:
+
+```powershell
+.\import_promoted_oasis_run.cmd `
+  --source-runtime-root "C:\path\to\Drive\Cerebrasensecloud\backend_runtime" `
+  --overwrite
+```
+
+Then verify alignment:
+
+```powershell
+.\check_oasis_productization.cmd `
+  --source-runtime-root "C:\path\to\Drive\Cerebrasensecloud\backend_runtime" `
+  --expected-run-name "oasis_colab_full_v3_auroc_monitor"
+```
+
+Then build a local demo bundle:
+
+```powershell
+.\build_oasis_demo_bundle.cmd `
+  --scan-path "C:\path\to\scan.hdr" `
+  --device cpu
+```
+
 If you prefer the script directly, the main entrypoint is:
 
 ```bash
@@ -190,6 +214,7 @@ Upload the whole `kaggle_alz_upload_bundle/` folder to Drive, not loose files fr
 - Keep the same `RUN_NAME` only when you want to resume or reuse that exact experiment.
 - Change `RUN_NAME` when you want a genuinely new experiment.
 - After a Colab restart, `/content` is gone, but `backend_runtime/` on Drive still keeps your persisted manifests, metrics, and checkpoints.
+- `backend_runtime/` is the canonical cloud source of truth for promoted OASIS runs.
 - OASIS and Kaggle remain separate evidence branches.
 - OASIS-2 remains a preparation and readiness branch, not a supervised training branch.
 

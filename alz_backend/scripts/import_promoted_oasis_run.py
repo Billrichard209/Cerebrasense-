@@ -17,8 +17,14 @@ from src.models.registry import import_promoted_oasis_run  # noqa: E402
 def build_parser() -> argparse.ArgumentParser:
     """Create the CLI parser."""
 
-    parser = argparse.ArgumentParser(description="Import a promoted OASIS run into local outputs and registry.")
-    parser.add_argument("--source-run-root", type=Path, required=True)
+    parser = argparse.ArgumentParser(
+        description=(
+            "Import a promoted OASIS run into local outputs and registry. "
+            "Use --source-runtime-root for the canonical Cerebrasensecloud/backend_runtime handoff."
+        )
+    )
+    parser.add_argument("--source-run-root", type=Path, default=None)
+    parser.add_argument("--source-runtime-root", type=Path, default=None)
     parser.add_argument("--source-registry-path", type=Path, default=None)
     parser.add_argument("--run-name", type=str, default=None)
     parser.add_argument("--registry-output-path", type=Path, default=None)
@@ -33,6 +39,7 @@ def main() -> None:
     result = import_promoted_oasis_run(
         source_run_root=args.source_run_root,
         source_registry_path=args.source_registry_path,
+        source_runtime_root=args.source_runtime_root,
         run_name=args.run_name,
         registry_output_path=args.registry_output_path,
         overwrite=args.overwrite,

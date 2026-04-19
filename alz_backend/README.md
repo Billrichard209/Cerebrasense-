@@ -25,6 +25,7 @@ This is a stronger and more honest fit than claiming broad brain-disease coverag
 
 For the fuller scope statement, see [docs/project_scope.md](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/docs/project_scope.md).
 For future OASIS-2 intake planning, see [docs/oasis2_readiness.md](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/docs/oasis2_readiness.md).
+For the canonical OASIS productization path, see [docs/oasis_productization_workflow.md](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/docs/oasis_productization_workflow.md).
 
 ## Core Principles
 
@@ -67,17 +68,51 @@ After a Colab OASIS run is trained and exported to Google Drive, the clean local
 
 1. Import the promoted run into local `outputs/`
 2. Use the imported registry-backed checkpoint for local scan inference
+3. Check alignment between local, evidence, and synced `backend_runtime`
+4. Build one local demo bundle from the active registry
 
 From the workspace root you can run:
 
 ```powershell
 .\import_promoted_oasis_run.cmd `
-  --source-run-root "C:\path\to\Drive\Cerebrasensecloud\training_runs\oasis\oasis_colab_full_v3_auroc_monitor" `
-  --source-registry-path "C:\path\to\Drive\Cerebrasensecloud\model_registry\oasis_current_baseline.json" `
+  --source-runtime-root "C:\path\to\Drive\Cerebrasensecloud\backend_runtime" `
   --overwrite
 ```
 
-Then run local inference through the active imported registry:
+Then verify alignment:
+
+```powershell
+.\check_oasis_productization.cmd `
+  --source-runtime-root "C:\path\to\Drive\Cerebrasensecloud\backend_runtime" `
+  --expected-run-name "oasis_colab_full_v3_auroc_monitor"
+```
+
+Then build a demo-ready local artifact bundle:
+
+```powershell
+.\build_oasis_demo_bundle.cmd `
+  --scan-path "C:\path\to\scan.hdr" `
+  --device cpu
+```
+
+If you want to compare the current active local baseline against an imported candidate before switching serving defaults:
+
+```powershell
+.\build_oasis_baseline_comparison.cmd `
+  --active-registry-path ".\alz_backend\outputs\model_registry\oasis_current_baseline.json" `
+  --candidate-registry-path ".\alz_backend\outputs\model_registry\oasis_candidate_v3.json" `
+  --scan-path "C:\path\to\scan.hdr" `
+  --device cpu `
+  --build-demo-bundles
+```
+
+Then generate a presentation-ready summary from the comparison/evidence/productization artifacts:
+
+```powershell
+.\build_oasis_presentation_summary.cmd
+```
+
+Or run local inference directly through the active imported registry:
 
 ```powershell
 .\predict_scan.cmd `
@@ -89,8 +124,16 @@ Then run local inference through the active imported registry:
 Useful entrypoints:
 
 - [import_promoted_oasis_run.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/import_promoted_oasis_run.py)
+- [check_oasis_productization.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/check_oasis_productization.py)
+- [build_oasis_demo_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_demo_bundle.py)
+- [build_oasis_baseline_comparison.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_baseline_comparison.py)
+- [build_oasis_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_presentation_summary.py)
 - [predict_scan.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/predict_scan.py)
 - [import_promoted_oasis_run.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/import_promoted_oasis_run.cmd)
+- [check_oasis_productization.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/check_oasis_productization.cmd)
+- [build_oasis_demo_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_demo_bundle.cmd)
+- [build_oasis_baseline_comparison.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_baseline_comparison.cmd)
+- [build_oasis_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_presentation_summary.cmd)
 - [predict_scan.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/predict_scan.cmd)
 
 ## Dataset Policy

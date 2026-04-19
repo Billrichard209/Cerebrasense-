@@ -28,6 +28,12 @@ http://127.0.0.1:8000/docs
 http://127.0.0.1:8000/health
 ```
 
+For a one-command local demo artifact bundle that exercises the main API surface without manually calling each route, use:
+
+```powershell
+cmd /c build_oasis_demo_bundle.cmd --scan-path "C:\path\to\scan.hdr" --device cpu
+```
+
 ## Optional API Key
 
 For local development, routes are open unless an API key is configured. To

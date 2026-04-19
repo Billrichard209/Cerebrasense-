@@ -229,8 +229,9 @@ def promote_oasis_checkpoint(
 
 def import_promoted_oasis_run(
     *,
-    source_run_root: str | Path,
+    source_run_root: str | Path | None = None,
     source_registry_path: str | Path | None = None,
+    source_runtime_root: str | Path | None = None,
     run_name: str | None = None,
     registry_output_path: str | Path | None = None,
     overwrite: bool = False,
@@ -239,13 +240,52 @@ def import_promoted_oasis_run(
     """Copy a Drive-exported OASIS run locally and rewrite registry paths for local serving."""
 
     resolved_settings = settings or get_app_settings()
-    resolved_source_run_root = Path(source_run_root)
+    resolved_source_runtime_root = Path(source_runtime_root).expanduser().resolve() if source_runtime_root is not None else None
+    if resolved_source_runtime_root is not None and not resolved_source_runtime_root.exists():
+        raise FileNotFoundError(
+            f"Source runtime root not found: {resolved_source_runtime_root}. "
+            "Provide the real local Google Drive sync path to Cerebrasensecloud/backend_runtime."
+        )
+    if resolved_source_runtime_root is not None and not resolved_source_runtime_root.is_dir():
+        raise ValueError(f"Source runtime root must be a directory: {resolved_source_runtime_root}")
+    resolved_source_registry_path = (
+        Path(source_registry_path).expanduser().resolve()
+        if source_registry_path is not None
+        else (
+            resolved_source_runtime_root / "outputs" / "model_registry" / "oasis_current_baseline.json"
+            if resolved_source_runtime_root is not None
+            else None
+        )
+    )
+
+    resolved_run_name = run_name
+    if resolved_run_name is None and resolved_source_registry_path is not None:
+        if not resolved_source_registry_path.exists():
+            raise FileNotFoundError(
+                f"Source runtime registry not found: {resolved_source_registry_path}. "
+                "Ensure backend_runtime/outputs/model_registry/oasis_current_baseline.json is synced locally "
+                "or provide --run-name explicitly with --source-run-root."
+            )
+        resolved_run_name = str(_load_registry_payload(resolved_source_registry_path).get("run_name") or "").strip() or None
+
+    if source_run_root is None:
+        if resolved_source_runtime_root is None:
+            raise ValueError("Provide source_run_root or source_runtime_root when importing a promoted OASIS run.")
+        if resolved_run_name is None:
+            raise ValueError(
+                "Could not infer the run name from the runtime registry. "
+                "Provide run_name explicitly or ensure the runtime registry exists."
+            )
+        resolved_source_run_root = resolved_source_runtime_root / "outputs" / "runs" / "oasis" / resolved_run_name
+    else:
+        resolved_source_run_root = Path(source_run_root).expanduser().resolve()
+
     if not resolved_source_run_root.exists():
         raise FileNotFoundError(f"Source run root not found: {resolved_source_run_root}")
     if not resolved_source_run_root.is_dir():
         raise ValueError(f"Source run root must be a directory: {resolved_source_run_root}")
 
-    resolved_run_name = run_name or resolved_source_run_root.name
+    resolved_run_name = resolved_run_name or resolved_source_run_root.name
     local_run_root = resolved_settings.outputs_root / "runs" / "oasis" / resolved_run_name
     if local_run_root.exists():
         if not overwrite:
@@ -258,8 +298,8 @@ def import_promoted_oasis_run(
     ensure_directory(local_run_root.parent)
     shutil.copytree(resolved_source_run_root, local_run_root)
 
-    if source_registry_path is not None:
-        registry_payload = _load_registry_payload(Path(source_registry_path))
+    if resolved_source_registry_path is not None and resolved_source_registry_path.exists():
+        registry_payload = _load_registry_payload(resolved_source_registry_path)
         checkpoint_name = Path(str(registry_payload.get("checkpoint_path", "best_model.pt"))).name
     else:
         checkpoint_name = "best_model.pt"
@@ -269,8 +309,8 @@ def import_promoted_oasis_run(
         raise FileNotFoundError(f"Expected imported checkpoint not found: {local_checkpoint_path}")
 
     local_registry_path: Path | None = None
-    if source_registry_path is not None:
-        registry_payload = _load_registry_payload(Path(source_registry_path))
+    if resolved_source_registry_path is not None and resolved_source_registry_path.exists():
+        registry_payload = _load_registry_payload(resolved_source_registry_path)
         local_model_config = resolved_settings.project_root / "configs" / "oasis_model.yaml"
         local_preprocessing_config = resolved_settings.project_root / "configs" / "oasis_transforms.yaml"
         registry_payload["run_name"] = resolved_run_name

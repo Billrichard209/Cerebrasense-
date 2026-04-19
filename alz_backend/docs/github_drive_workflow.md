@@ -43,19 +43,11 @@ Recommended Drive layout:
 
 ```text
 MyDrive/
-  cerebrasense/
-    code/
-      alz_backend/            # optional mirrored code copy
-    data/
-      oasis1/
-        raw/
-      kaggle_alz/
-        raw/
-          OriginalDataset/
-          AugmentedAlzheimerDataset/
-      oasis2/
-        raw/
-    outputs/
+  Cerebrasensecloud/
+    OASIS-1/
+    OASIS-2/
+    kaggle_alz_upload_bundle/
+    backend_runtime/
 ```
 
 ## Best Practical Workflow
@@ -65,7 +57,7 @@ MyDrive/
 3. In Colab, mount Drive.
 4. Clone or sync the backend code.
 5. Point training configs to the Drive-mounted dataset folders.
-6. Save outputs/checkpoints back to Drive.
+6. Save outputs/checkpoints back to `backend_runtime/` on Drive.
 
 ## Upload Advice
 
