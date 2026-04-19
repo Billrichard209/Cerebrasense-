@@ -56,6 +56,15 @@ from .oasis2 import (
     build_oasis2_session_manifest,
     resolve_oasis2_source_layout,
 )
+from .oasis2_dataset import (
+    OASIS2AdapterSummary,
+    OASIS2DatasetSpec,
+    build_oasis2_adapter_summary,
+    build_oasis2_dataset_spec,
+    build_oasis2_monai_records,
+    load_oasis2_session_manifest,
+    save_oasis2_adapter_summary,
+)
 from .oasis2_upload_bundle import OASIS2UploadBundleResult, build_oasis2_upload_bundle
 from .oasis2_readiness import (
     OASIS2ReadinessCheck,
@@ -99,7 +108,9 @@ __all__ = [
     "OASIS1SplitResult",
     "OASIS2ReadinessCheck",
     "OASIS2ReadinessReport",
+    "OASIS2AdapterSummary",
     "OASIS2RawInventoryResult",
+    "OASIS2DatasetSpec",
     "OASIS2SessionManifestResult",
     "OASIS2SourceLayout",
     "OASIS2UploadBundleResult",
@@ -132,6 +143,9 @@ __all__ = [
     "build_oasis2_readiness_report",
     "build_oasis2_raw_inventory",
     "build_oasis2_session_manifest",
+    "build_oasis2_adapter_summary",
+    "build_oasis2_dataset_spec",
+    "build_oasis2_monai_records",
     "build_oasis2_upload_bundle",
     "build_oasis_upload_bundle",
     "build_kaggle_dataset_spec",
@@ -144,9 +158,11 @@ __all__ = [
     "load_kaggle_manifest",
     "load_external_cohort_manifest",
     "load_oasis_manifest",
+    "load_oasis2_session_manifest",
     "discover_external_3d_images",
     "resolve_oasis2_source_root",
     "resolve_oasis2_source_layout",
+    "save_oasis2_adapter_summary",
     "save_oasis2_readiness_report",
     "build_scope_data_plan",
     "save_scope_data_plan",

@@ -1,8 +1,17 @@
 # OASIS-2 Drive Upload Checklist
 
-Use this file when preparing the raw-only OASIS-2 longitudinal branch for Google Drive.
+Use this file only when a real Google Drive or Colab workflow actually needs OASIS-2 outside the local machine.
 
 This dataset is a **future longitudinal structural branch**, not a supervised classification branch.
+
+If you are only doing:
+
+- local readiness checks
+- raw inventory generation
+- unlabeled session manifest building
+- onboarding and planning work
+
+do **not** upload OASIS-2 to Drive yet. Keep it local-first until a remote runtime genuinely needs it.
 
 ## Recommended Approach
 

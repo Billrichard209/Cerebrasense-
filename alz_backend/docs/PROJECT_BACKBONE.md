@@ -73,6 +73,7 @@ If you want the shortest high-value reading order, use this:
 ### Next expansion
 
 - [oasis2_readiness.md](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/docs/oasis2_readiness.md)
+- [oasis2_onboarding_bundle.md](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/outputs/reports/onboarding/current_oasis2_onboarding/oasis2_onboarding_bundle.md)
 
 ## Operational Backbone
 
@@ -84,6 +85,8 @@ These are the main command/launcher entrypoints for the current phase:
 - [build_oasis_baseline_comparison.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_baseline_comparison.cmd)
 - [build_oasis_presentation_summary.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_presentation_summary.cmd)
 - [build_project_status_bundle.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_project_status_bundle.cmd)
+- [build_oasis2_onboarding_bundle.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_onboarding_bundle.cmd)
+- [build_oasis2_adapter.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_adapter.cmd)
 
 ## Best Next Steps
 
@@ -93,6 +96,7 @@ The best next moves for the project are:
 2. Refresh the Kaggle branch once as a secondary benchmark, but do not let it replace the OASIS promotion path.
 3. Use repeated-split refreshes or targeted error analysis if you do more OASIS research before adding new datasets.
 4. Open the OASIS-2 readiness/onboarding branch only after the OASIS productization path feels stable.
+5. Keep OASIS-2 local until a real Colab or remote OASIS-2 workflow exists; do not upload it to Drive just for onboarding.
 
 ## Simple Rule
 

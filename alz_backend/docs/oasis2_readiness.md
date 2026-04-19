@@ -72,6 +72,59 @@ timeline-ready longitudinal records without inventing labels.
 .\.venv\Scripts\python.exe alz_backend\scripts\build_oasis2_session_manifest.py --source-root "C:\path\to\Cerebrasense"
 ```
 
+## Build One Onboarding Bundle
+
+If you want one single folder for review, onboarding, and planning, build the
+local-first onboarding bundle:
+
+```powershell
+.\build_oasis2_onboarding_bundle.cmd --source-root "C:\path\to\Cerebrasense"
+```
+
+That bundle will:
+
+- regenerate the readiness report
+- rebuild the raw inventory
+- rebuild the unlabeled session manifest
+- package the key docs and artifacts into one review folder
+
+## Check The OASIS-2 Adapter Stub
+
+The next integration step after the onboarding bundle is the first dedicated
+OASIS-2 manifest adapter stub:
+
+```powershell
+.\build_oasis2_adapter.cmd
+```
+
+That adapter check:
+
+- validates the current unlabeled `oasis2_session_manifest.csv`
+- confirms the adapter is limited to onboarding and longitudinal preparation
+- writes a status report under `outputs/reports/onboarding/`
+- fails the idea that OASIS-2 is already ready for supervised training
+
+## When To Upload OASIS-2 To Google Drive
+
+Do **not** upload OASIS-2 to Google Drive yet if we are only doing:
+
+- local readiness checks
+- raw inventory generation
+- unlabeled session manifest building
+- onboarding and planning work
+
+Upload OASIS-2 to Drive only when one of these becomes true:
+
+- we open a real **Colab** workflow for OASIS-2
+- we need a remote runtime to preprocess or evaluate OASIS-2
+- we have a dedicated OASIS-2 adapter/split workflow that actually needs cloud execution
+
+For the current phase, the correct posture is:
+
+- keep OASIS-2 **local**
+- keep OASIS-1 as the active evidence/training path
+- treat OASIS-2 as the next onboarding branch, not a Drive-backed training dataset
+
 ## Saved Outputs
 
 Reports are saved under:

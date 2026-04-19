@@ -136,6 +136,8 @@ Useful entrypoints:
 - [build_oasis_baseline_comparison.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_baseline_comparison.py)
 - [build_oasis_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_presentation_summary.py)
 - [build_project_status_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_project_status_bundle.py)
+- [build_oasis2_onboarding_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis2_onboarding_bundle.py)
+- [check_oasis2_adapter.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/check_oasis2_adapter.py)
 - [predict_scan.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/predict_scan.py)
 - [import_promoted_oasis_run.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/import_promoted_oasis_run.cmd)
 - [check_oasis_productization.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/check_oasis_productization.cmd)
@@ -143,6 +145,8 @@ Useful entrypoints:
 - [build_oasis_baseline_comparison.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_baseline_comparison.cmd)
 - [build_oasis_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_presentation_summary.cmd)
 - [build_project_status_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_project_status_bundle.cmd)
+- [build_oasis2_onboarding_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_onboarding_bundle.cmd)
+- [build_oasis2_adapter.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_adapter.cmd)
 - [predict_scan.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/predict_scan.cmd)
 
 ## Dataset Policy
@@ -166,6 +170,15 @@ OASIS-2 is the most natural future expansion of the current scope. It fits the e
 - longitudinal progression summaries
 - repeated-scan structural trend analysis
 - future split logic for visit-aware evaluation
+
+For the current phase, OASIS-2 should stay **local-first**. Use the readiness,
+inventory, unlabeled manifest, and onboarding bundle flows locally first. Do
+not upload OASIS-2 to Google Drive until we actually open a Colab or other
+remote workflow that needs OASIS-2 outside this machine.
+
+The first dedicated adapter step now exists too: use `build_oasis2_adapter.cmd`
+to validate the unlabeled manifest adapter contract before any future OASIS-2
+training or evaluation work is even considered.
 
 ### Kaggle
 
