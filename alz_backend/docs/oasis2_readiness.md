@@ -104,6 +104,55 @@ That adapter check:
 - writes a status report under `outputs/reports/onboarding/`
 - fails the idea that OASIS-2 is already ready for supervised training
 
+## Build The Metadata Template
+
+Once the unlabeled session manifest exists, generate the metadata mapping template:
+
+```powershell
+.\build_oasis2_metadata_template.cmd
+```
+
+This creates a CSV you can fill with explicit visit/clinical metadata such as:
+
+- `age_at_visit`
+- `clinical_status`
+- `cdr_global`
+- `mmse`
+- `diagnosis_label`
+- `diagnosis_label_name`
+- `metadata_source`
+- `split_group_hint`
+
+## Check The Metadata Adapter
+
+After filling the metadata template, validate the merge path with:
+
+```powershell
+.\build_oasis2_metadata_adapter.cmd
+```
+
+That step:
+
+- merges the metadata template back onto the OASIS-2 session manifest
+- writes a labeled-prep manifest candidate
+- reports how many rows actually have candidate labels
+- tells you honestly whether OASIS-2 is ready for labeled-manifest work
+
+## Build The Subject-Safe Split Preview
+
+After the metadata template exists, generate the planning-only split preview:
+
+```powershell
+.\build_oasis2_split_policy.cmd
+```
+
+This step:
+
+- groups rows by `split_group_hint` or `subject_id`
+- assigns deterministic subject-safe buckets
+- marks conservative `holdout_candidate` and `development_candidate` roles
+- avoids pretending that true train/val/test splits already exist
+
 ## When To Upload OASIS-2 To Google Drive
 
 Do **not** upload OASIS-2 to Google Drive yet if we are only doing:

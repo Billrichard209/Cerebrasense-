@@ -138,6 +138,9 @@ Useful entrypoints:
 - [build_project_status_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_project_status_bundle.py)
 - [build_oasis2_onboarding_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis2_onboarding_bundle.py)
 - [check_oasis2_adapter.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/check_oasis2_adapter.py)
+- [build_oasis2_metadata_template.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis2_metadata_template.py)
+- [check_oasis2_metadata_adapter.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/check_oasis2_metadata_adapter.py)
+- [build_oasis2_split_policy.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis2_split_policy.py)
 - [predict_scan.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/predict_scan.py)
 - [import_promoted_oasis_run.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/import_promoted_oasis_run.cmd)
 - [check_oasis_productization.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/check_oasis_productization.cmd)
@@ -147,6 +150,9 @@ Useful entrypoints:
 - [build_project_status_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_project_status_bundle.cmd)
 - [build_oasis2_onboarding_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_onboarding_bundle.cmd)
 - [build_oasis2_adapter.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_adapter.cmd)
+- [build_oasis2_metadata_template.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_metadata_template.cmd)
+- [build_oasis2_metadata_adapter.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_metadata_adapter.cmd)
+- [build_oasis2_split_policy.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_split_policy.cmd)
 - [predict_scan.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/predict_scan.cmd)
 
 ## Dataset Policy
@@ -179,6 +185,15 @@ remote workflow that needs OASIS-2 outside this machine.
 The first dedicated adapter step now exists too: use `build_oasis2_adapter.cmd`
 to validate the unlabeled manifest adapter contract before any future OASIS-2
 training or evaluation work is even considered.
+
+The next concrete step after that is metadata mapping: generate the OASIS-2
+metadata template, fill it explicitly, and run the metadata adapter check before
+claiming that OASIS-2 is ready for labeled-manifest work.
+
+After metadata mapping, the next safe planning step is subject-safe split
+preview generation. That preview is deterministic and patient-safe, but it still
+should not be mistaken for final supervised training splits until label coverage
+and class balance are reviewed.
 
 ### Kaggle
 

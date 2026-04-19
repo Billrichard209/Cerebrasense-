@@ -65,6 +65,18 @@ from .oasis2_dataset import (
     load_oasis2_session_manifest,
     save_oasis2_adapter_summary,
 )
+from .oasis2_metadata import (
+    OASIS2MetadataAdapterSummary,
+    OASIS2MetadataTemplateResult,
+    build_oasis2_metadata_template,
+    load_oasis2_metadata_template,
+    merge_oasis2_metadata_template,
+    save_oasis2_metadata_adapter_summary,
+)
+from .oasis2_split_policy import (
+    OASIS2SplitPolicySummary,
+    build_oasis2_subject_safe_split_plan,
+)
 from .oasis2_upload_bundle import OASIS2UploadBundleResult, build_oasis2_upload_bundle
 from .oasis2_readiness import (
     OASIS2ReadinessCheck,
@@ -109,7 +121,10 @@ __all__ = [
     "OASIS2ReadinessCheck",
     "OASIS2ReadinessReport",
     "OASIS2AdapterSummary",
+    "OASIS2MetadataAdapterSummary",
+    "OASIS2MetadataTemplateResult",
     "OASIS2RawInventoryResult",
+    "OASIS2SplitPolicySummary",
     "OASIS2DatasetSpec",
     "OASIS2SessionManifestResult",
     "OASIS2SourceLayout",
@@ -145,7 +160,9 @@ __all__ = [
     "build_oasis2_session_manifest",
     "build_oasis2_adapter_summary",
     "build_oasis2_dataset_spec",
+    "build_oasis2_metadata_template",
     "build_oasis2_monai_records",
+    "build_oasis2_subject_safe_split_plan",
     "build_oasis2_upload_bundle",
     "build_oasis_upload_bundle",
     "build_kaggle_dataset_spec",
@@ -159,10 +176,13 @@ __all__ = [
     "load_external_cohort_manifest",
     "load_oasis_manifest",
     "load_oasis2_session_manifest",
+    "load_oasis2_metadata_template",
     "discover_external_3d_images",
+    "merge_oasis2_metadata_template",
     "resolve_oasis2_source_root",
     "resolve_oasis2_source_layout",
     "save_oasis2_adapter_summary",
+    "save_oasis2_metadata_adapter_summary",
     "save_oasis2_readiness_report",
     "build_scope_data_plan",
     "save_scope_data_plan",

@@ -17,6 +17,12 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.configs.runtime import AppSettings, get_app_settings  # noqa: E402
 from src.data.oasis2 import build_oasis2_raw_inventory, build_oasis2_session_manifest  # noqa: E402
+from src.data.oasis2_metadata import (  # noqa: E402
+    build_oasis2_metadata_template,
+    merge_oasis2_metadata_template,
+    save_oasis2_metadata_adapter_summary,
+)
+from src.data.oasis2_split_policy import build_oasis2_subject_safe_split_plan  # noqa: E402
 from src.data.oasis2_readiness import build_oasis2_readiness_report, save_oasis2_readiness_report  # noqa: E402
 from src.utils.io_utils import ensure_directory  # noqa: E402
 
@@ -92,6 +98,24 @@ def build_oasis2_onboarding_bundle(
         source_root=source_root,
         inventory_path=inventory_result.inventory_path,
     )
+    metadata_template_result = build_oasis2_metadata_template(
+        resolved_settings,
+        manifest_path=manifest_result.manifest_path,
+    )
+    metadata_adapter_summary = merge_oasis2_metadata_template(
+        resolved_settings,
+        manifest_path=manifest_result.manifest_path,
+        metadata_path=metadata_template_result.template_path,
+    )
+    split_policy_summary = build_oasis2_subject_safe_split_plan(
+        resolved_settings,
+        metadata_path=metadata_template_result.template_path,
+    )
+    metadata_adapter_json, metadata_adapter_md = save_oasis2_metadata_adapter_summary(
+        metadata_adapter_summary,
+        resolved_settings,
+        file_stem="oasis2_metadata_adapter_status",
+    )
 
     readiness_payload = _load_json(readiness_json)
     inventory_summary = _load_json(inventory_result.summary_path)
@@ -108,6 +132,20 @@ def build_oasis2_onboarding_bundle(
         "oasis2_longitudinal_records_csv": ("generated", manifest_result.longitudinal_records_path),
         "oasis2_subject_summary_csv": ("generated", manifest_result.subject_summary_path),
         "oasis2_session_manifest_summary_json": ("generated", manifest_result.summary_path),
+        "oasis2_metadata_template_csv": ("generated", metadata_template_result.template_path),
+        "oasis2_metadata_template_summary_json": ("generated", metadata_template_result.summary_path),
+        "oasis2_metadata_adapter_status_json": ("generated", metadata_adapter_json),
+        "oasis2_metadata_adapter_status_md": ("generated", metadata_adapter_md),
+        "oasis2_labeled_prep_manifest_csv": ("generated", Path(metadata_adapter_summary.merged_manifest_path)),
+        "oasis2_subject_safe_split_plan_csv": ("generated", Path(split_policy_summary.plan_csv_path)),
+        "oasis2_subject_safe_split_plan_summary_json": (
+            "generated",
+            resolved_settings.data_root / "interim" / "oasis2_subject_safe_split_plan_summary.json",
+        ),
+        "oasis2_subject_safe_split_plan_md": (
+            "generated",
+            resolved_settings.outputs_root / "reports" / "onboarding" / "oasis2_subject_safe_split_plan.md",
+        ),
         "oasis2_readiness_doc": ("docs", resolved_settings.project_root / "docs" / "oasis2_readiness.md"),
         "project_backbone_doc": ("docs", resolved_settings.project_root / "docs" / "PROJECT_BACKBONE.md"),
         "project_scope_doc": ("docs", resolved_settings.project_root / "docs" / "project_scope.md"),
@@ -133,8 +171,10 @@ def build_oasis2_onboarding_bundle(
     )
     next_steps = [
         "Keep OASIS-2 local for now and use this bundle as the onboarding review pack.",
-        "Collect or map the missing visit/label metadata before any supervised OASIS-2 evaluation work.",
-        "Implement a dedicated OASIS-2 manifest adapter and subject-safe split policy before any training claims.",
+        "Fill the generated OASIS-2 metadata template with explicit visit/clinical metadata before any supervised OASIS-2 evaluation work.",
+        "Use the metadata adapter status report to confirm whether a labeled-prep manifest is actually ready.",
+        "Use the generated subject-safe split plan as a planning preview, not as a final train/val/test split.",
+        "Turn the split preview into a label-aware subject-safe split policy only after metadata coverage is good enough.",
         "Only upload OASIS-2 to Google Drive when an actual Colab or remote runtime path is ready for it.",
     ]
     notes = [

@@ -87,6 +87,9 @@ These are the main command/launcher entrypoints for the current phase:
 - [build_project_status_bundle.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_project_status_bundle.cmd)
 - [build_oasis2_onboarding_bundle.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_onboarding_bundle.cmd)
 - [build_oasis2_adapter.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_adapter.cmd)
+- [build_oasis2_metadata_template.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_metadata_template.cmd)
+- [build_oasis2_metadata_adapter.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_metadata_adapter.cmd)
+- [build_oasis2_split_policy.cmd](/C:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis2_split_policy.cmd)
 
 ## Best Next Steps
 
