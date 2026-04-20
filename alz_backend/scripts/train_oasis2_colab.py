@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -51,6 +53,7 @@ class OASIS2RuntimeRefreshResult:
     """Artifacts produced when rebuilding runtime data from a bundle source root."""
 
     source_root: Path
+    manifest_source: str
     manifest_path: Path
     longitudinal_records_path: Path
     subject_summary_path: Path
@@ -230,6 +233,103 @@ def _stage_bundle_to_local(*, bundle_root: Path, stage_root: Path, force_restage
     return resolved_stage_root
 
 
+def _rewrite_bundle_relative_meta(meta_payload: dict[str, Any], *, bundle_root: Path, image_path: Path) -> dict[str, Any]:
+    """Rewrite portable bundle metadata so the runtime points at the current bundle root."""
+
+    rewritten = dict(meta_payload)
+    paired_image_value = rewritten.get("paired_image")
+    if isinstance(paired_image_value, str) and paired_image_value.strip():
+        paired_candidate = Path(paired_image_value)
+        if not paired_candidate.is_absolute():
+            rewritten["paired_image"] = str((bundle_root / paired_candidate).resolve())
+    rewritten["source_root"] = str(bundle_root)
+    rewritten["session_dir"] = str(image_path.parent.parent)
+    rewritten["raw_dir"] = str(image_path.parent)
+    return rewritten
+
+
+def _materialize_runtime_manifest_from_bundle_reference(
+    *,
+    bundle_root: Path,
+    data_root: Path,
+) -> tuple[Path, Path, Path, Path]:
+    """Build runtime manifest artifacts from the bundle's backend_reference manifest."""
+
+    backend_reference_root = bundle_root / "backend_reference"
+    relative_manifest_path = backend_reference_root / "oasis2_session_manifest_relative.csv"
+    if not relative_manifest_path.exists():
+        raise FileNotFoundError(f"Bundle reference manifest not found: {relative_manifest_path}")
+
+    destination_root = data_root / "interim"
+    destination_root.mkdir(parents=True, exist_ok=True)
+    manifest_path = destination_root / "oasis2_session_manifest.csv"
+    longitudinal_records_path = destination_root / "oasis2_longitudinal_records.csv"
+    subject_summary_path = destination_root / "oasis2_subject_summary.csv"
+    summary_path = destination_root / "oasis2_session_manifest_summary.json"
+
+    relative_manifest = pd.read_csv(relative_manifest_path)
+    rewritten_rows: list[dict[str, Any]] = []
+    for row in relative_manifest.to_dict(orient="records"):
+        relative_image = str(row.get("image", "")).strip()
+        if not relative_image:
+            raise ValueError("OASIS-2 bundle reference manifest contains an empty image path.")
+        image_path = (bundle_root / relative_image).resolve()
+        if not image_path.exists():
+            raise FileNotFoundError(f"OASIS-2 bundle reference image is missing: {image_path}")
+
+        meta_payload = json.loads(row.get("meta") or "{}")
+        rewritten_meta = _rewrite_bundle_relative_meta(meta_payload, bundle_root=bundle_root, image_path=image_path)
+        rewritten_row = dict(row)
+        rewritten_row["image"] = str(image_path)
+        rewritten_row["meta"] = json.dumps(rewritten_meta, ensure_ascii=True, sort_keys=True)
+        rewritten_rows.append(rewritten_row)
+
+    manifest_frame = pd.DataFrame(rewritten_rows).sort_values(
+        by=["subject_id", "visit_number", "session_id"],
+        kind="stable",
+    )
+    manifest_frame.to_csv(manifest_path, index=False)
+
+    longitudinal_records = manifest_frame.rename(columns={"image": "source_path", "visit_number": "visit_order"})
+    longitudinal_records.insert(0, "record_type", "oasis2_session")
+    longitudinal_records.to_csv(longitudinal_records_path, index=False)
+
+    subject_summary = (
+        manifest_frame.groupby("subject_id", sort=True)
+        .agg(
+            session_count=("session_id", "nunique"),
+            first_visit=("visit_number", "min"),
+            last_visit=("visit_number", "max"),
+        )
+        .reset_index()
+    )
+    session_lists = (
+        manifest_frame.groupby("subject_id", sort=True)["session_id"]
+        .apply(lambda values: "|".join(str(value) for value in values))
+        .reset_index(name="session_ids")
+    )
+    subject_summary = subject_summary.merge(session_lists, on="subject_id", how="left")
+    subject_summary.to_csv(subject_summary_path, index=False)
+
+    summary_payload = {
+        "source_root": str(bundle_root),
+        "manifest_reference_path": str(relative_manifest_path),
+        "manifest_path": str(manifest_path),
+        "longitudinal_records_path": str(longitudinal_records_path),
+        "subject_summary_path": str(subject_summary_path),
+        "session_row_count": int(len(manifest_frame)),
+        "unique_subject_count": int(manifest_frame["subject_id"].nunique()),
+        "longitudinal_subject_count": int((subject_summary["session_count"] > 1).sum()),
+        "selection_strategy": "bundle_reference_relative_manifest",
+        "notes": [
+            "This runtime manifest was materialized directly from backend_reference/oasis2_session_manifest_relative.csv.",
+            "Using the bundle reference manifest avoids Drive folder-rescan drift during remote OASIS-2 runs.",
+        ],
+    }
+    summary_path.write_text(json.dumps(summary_payload, indent=2), encoding="utf-8")
+    return manifest_path, longitudinal_records_path, subject_summary_path, summary_path
+
+
 def _build_blocked_reason(readiness_payload: dict[str, Any]) -> str:
     """Collapse failing readiness checks into one compact explanation string."""
 
@@ -336,10 +436,29 @@ def _refresh_runtime_from_source(
         )
         official_demographics_import_payload = demographics_summary.to_payload()
 
-    manifest_result = build_oasis2_session_manifest(
-        settings=settings,
-        source_root=resolved_source_root,
-    )
+    relative_manifest_path = resolved_source_root / "backend_reference" / "oasis2_session_manifest_relative.csv"
+    if relative_manifest_path.exists():
+        (
+            manifest_path,
+            longitudinal_records_path,
+            subject_summary_path,
+            manifest_summary_path,
+        ) = _materialize_runtime_manifest_from_bundle_reference(
+            bundle_root=resolved_source_root,
+            data_root=settings.data_root,
+        )
+        manifest_source = "bundle_reference_relative_manifest"
+    else:
+        manifest_result = build_oasis2_session_manifest(
+            settings=settings,
+            source_root=resolved_source_root,
+        )
+        manifest_path = manifest_result.manifest_path
+        longitudinal_records_path = manifest_result.longitudinal_records_path
+        subject_summary_path = manifest_result.subject_summary_path
+        manifest_summary_path = manifest_result.summary_path
+        manifest_source = "raw_bundle_rescan"
+
     metadata_summary = merge_oasis2_metadata_template(
         settings=settings,
         metadata_path=runtime_metadata_template_path,
@@ -362,10 +481,11 @@ def _refresh_runtime_from_source(
 
     return OASIS2RuntimeRefreshResult(
         source_root=resolved_source_root,
-        manifest_path=manifest_result.manifest_path,
-        longitudinal_records_path=manifest_result.longitudinal_records_path,
-        subject_summary_path=manifest_result.subject_summary_path,
-        manifest_summary_path=manifest_result.summary_path,
+        manifest_source=manifest_source,
+        manifest_path=manifest_path,
+        longitudinal_records_path=longitudinal_records_path,
+        subject_summary_path=subject_summary_path,
+        manifest_summary_path=manifest_summary_path,
         metadata_template_path=runtime_metadata_template_path,
         official_demographics_path=official_demographics_path,
         official_demographics_import_json_path=official_demographics_import_json_path,
@@ -538,6 +658,7 @@ def run_oasis2_colab_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         "upload_bundle_report_json_path": str(upload_json_path),
         "upload_bundle_report_md_path": str(upload_md_path),
         "manifest_path": str(active_refresh.manifest_path),
+        "manifest_source": active_refresh.manifest_source,
         "manifest_summary_path": str(active_refresh.manifest_summary_path),
         "metadata_adapter_json_path": str(active_refresh.metadata_adapter_json_path),
         "metadata_adapter_md_path": str(active_refresh.metadata_adapter_md_path),

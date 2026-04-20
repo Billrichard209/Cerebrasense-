@@ -201,6 +201,7 @@ def test_oasis2_colab_pipeline_blocks_cleanly_when_labels_are_missing(tmp_path: 
     assert summary["training_ready"] is False
     assert summary["training_started"] is False
     assert summary["readiness_status"] == "fail"
+    assert summary["manifest_source"] == "bundle_reference_relative_manifest"
     assert "label_coverage" in summary["blocked_reason"]
     assert Path(summary["runtime_metadata_template_path"]).exists()
     assert Path(summary["training_readiness_json_path"]).exists()
@@ -256,6 +257,7 @@ def test_oasis2_colab_pipeline_can_autofill_runtime_metadata_from_official_demog
     runtime_template = pd.read_csv(summary["runtime_metadata_template_path"])
     assert runtime_template.loc[0, "diagnosis_label"] == 0
     assert runtime_template.loc[0, "diagnosis_label_name"] == "nondemented"
+    assert summary["manifest_source"] == "bundle_reference_relative_manifest"
     assert Path(summary["official_demographics_import_json_path"]).exists()
     assert summary["official_demographics_import_summary"]["matched_row_count"] == 1
     assert "label_coverage" not in str(summary["blocked_reason"])
