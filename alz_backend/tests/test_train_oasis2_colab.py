@@ -259,3 +259,28 @@ def test_oasis2_colab_pipeline_can_autofill_runtime_metadata_from_official_demog
     assert Path(summary["official_demographics_import_json_path"]).exists()
     assert summary["official_demographics_import_summary"]["matched_row_count"] == 1
     assert "label_coverage" not in str(summary["blocked_reason"])
+
+
+def test_oasis2_colab_prefers_repo_bundled_demographics_before_network(tmp_path: Path) -> None:
+    """The Colab runner should use a repo-bundled demographics file when available."""
+
+    module = _load_oasis2_colab_module()
+    project_root = tmp_path / "repo"
+    outputs_root = tmp_path / "runtime_outputs"
+    bundle_root = tmp_path / "bundle"
+    repo_demographics_path = (
+        project_root / "data" / "metadata" / "oasis2" / "oasis2_official_demographics.csv"
+    )
+    repo_demographics_path.parent.mkdir(parents=True, exist_ok=True)
+    repo_demographics_path.write_text("Subject ID,MRI ID,Group,Visit,MR Delay,M/F,Hand,Age,EDUC,SES,MMSE,CDR,eTIV,nWBV,ASF\n", encoding="utf-8")
+    bundle_root.mkdir(parents=True, exist_ok=True)
+
+    resolved = module._resolve_official_demographics_source(
+        project_root=project_root,
+        bundle_root=bundle_root,
+        outputs_root=outputs_root,
+        override_path=None,
+        demographics_url="https://example.com/should-not-download.xlsx",
+    )
+
+    assert resolved == repo_demographics_path

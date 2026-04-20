@@ -18,6 +18,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+OASIS2_REPO_DEMOGRAPHICS_RELATIVE_PATH = (
+    Path("data") / "metadata" / "oasis2" / "oasis2_official_demographics.csv"
+)
+
 from scripts.train_oasis2 import apply_cli_overrides, build_parser as build_train_parser  # noqa: E402
 from src.configs.runtime import get_app_settings  # noqa: E402
 from src.data.oasis2 import build_oasis2_session_manifest  # noqa: E402
@@ -166,6 +170,49 @@ def _download_official_demographics(*, outputs_root: Path, demographics_url: str
     return destination
 
 
+def _resolve_official_demographics_source(
+    *,
+    project_root: Path,
+    bundle_root: Path,
+    outputs_root: Path,
+    override_path: Path | None,
+    demographics_url: str,
+) -> Path:
+    """Resolve the best available OASIS-2 official demographics source.
+
+    Preference order:
+    1. explicit override path
+    2. bundled backend_reference copy
+    3. repo-bundled reference CSV
+    4. cached runtime import
+    5. public website download
+    """
+
+    if override_path is not None:
+        resolved = override_path.expanduser().resolve()
+        if not resolved.exists():
+            raise FileNotFoundError(f"OASIS-2 demographics override not found: {resolved}")
+        return resolved
+
+    candidates = [
+        bundle_root / "backend_reference" / "oasis2_official_demographics.csv",
+        bundle_root / "backend_reference" / "oasis2_demographics.csv",
+        bundle_root / "backend_reference" / "oasis2_official_demographics.xlsx",
+        bundle_root / "backend_reference" / "oasis2_demographics.xlsx",
+        project_root / OASIS2_REPO_DEMOGRAPHICS_RELATIVE_PATH,
+        outputs_root / "imports" / "oasis2_official_demographics.csv",
+        outputs_root / "imports" / "oasis2_official_demographics.xlsx",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    return _download_official_demographics(
+        outputs_root=outputs_root,
+        demographics_url=demographics_url,
+    )
+
+
 def _stage_bundle_to_local(*, bundle_root: Path, stage_root: Path, force_restage: bool) -> Path:
     """Copy the uploaded OASIS-2 bundle into local runtime storage for faster training I/O."""
 
@@ -265,13 +312,12 @@ def _refresh_runtime_from_source(
         metadata_template_path=runtime_metadata_template_path,
         settings=settings,
     ):
-        official_demographics_path = (
-            demographics_path.expanduser().resolve()
-            if demographics_path is not None
-            else _download_official_demographics(
-                outputs_root=settings.outputs_root,
-                demographics_url=official_demographics_url,
-            )
+        official_demographics_path = _resolve_official_demographics_source(
+            project_root=settings.project_root,
+            bundle_root=resolved_source_root,
+            outputs_root=settings.outputs_root,
+            override_path=demographics_path,
+            demographics_url=official_demographics_url,
         )
         demographics_summary = import_oasis2_official_demographics_into_metadata_template(
             official_demographics_path,
