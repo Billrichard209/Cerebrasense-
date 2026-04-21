@@ -392,6 +392,22 @@ def _build_blocked_reason(readiness_payload: dict[str, Any]) -> str:
     return f"OASIS-2 training readiness did not pass: {readiness_payload.get('overall_status')}"
 
 
+def _build_exception_recommendations(*, error: Exception, bundle_root: Path) -> list[str]:
+    """Return targeted operator guidance for runtime refresh failures."""
+
+    message = str(error)
+    if "missing files referenced by backend_reference/oasis2_session_manifest_relative.csv" in message:
+        return [
+            "The uploaded Drive OASIS-2 bundle is incomplete. Re-upload the missing files from the canonical local upload-ready bundle.",
+            f"Safest repair: replace {bundle_root / 'OAS2_RAW_PART1'} on Drive, or re-upload the full OASIS-2 bundle for the cleanest reset.",
+            "After the upload finishes, rerun cells 1 to 3. The runner will restage the cached local bundle automatically if needed.",
+        ]
+    return [
+        "Inspect the official demographics import step and the saved runtime reports before retrying OASIS-2 training.",
+        "If the runtime cannot reach the official demographics URL, pass --demographics-path with a local copy of the spreadsheet.",
+    ]
+
+
 def _write_summary_files(*, outputs_root: Path, summary: dict[str, Any], run_root: Path | None = None) -> tuple[Path, Path]:
     """Persist a compact JSON/Markdown summary for the Colab OASIS-2 pipeline."""
 
@@ -669,10 +685,7 @@ def run_oasis2_colab_pipeline(args: argparse.Namespace) -> dict[str, Any]:
             "training_started": False,
             "readiness_status": "fail",
             "blocked_reason": str(error),
-            "recommendations": [
-                "Inspect the official demographics import step and the saved runtime reports before retrying OASIS-2 training.",
-                "If the runtime cannot reach the official demographics URL, pass --demographics-path with a local copy of the spreadsheet.",
-            ],
+            "recommendations": _build_exception_recommendations(error=error, bundle_root=bundle_root),
         }
         summary_json_path, summary_md_path = _write_summary_files(outputs_root=outputs_root, summary=summary)
         summary["summary_json_path"] = str(summary_json_path)
