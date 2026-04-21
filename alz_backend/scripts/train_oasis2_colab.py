@@ -221,15 +221,38 @@ def _stage_bundle_to_local(*, bundle_root: Path, stage_root: Path, force_restage
 
     resolved_bundle_root = bundle_root.expanduser().resolve()
     resolved_stage_root = stage_root.expanduser().resolve()
+    source_missing_paths = _find_missing_bundle_reference_files(resolved_bundle_root)
+    if source_missing_paths:
+        rendered = ", ".join(str(path) for path in source_missing_paths[:10])
+        raise FileNotFoundError(
+            "The uploaded OASIS-2 bundle is missing files referenced by "
+            f"backend_reference/oasis2_session_manifest_relative.csv. Examples: {rendered}"
+        )
     if resolved_stage_root.exists() and force_restage:
         shutil.rmtree(resolved_stage_root)
     if resolved_stage_root.exists():
-        print(f"Reusing staged OASIS-2 bundle: {resolved_stage_root}")
-        return resolved_stage_root
+        staged_missing_paths = _find_missing_bundle_reference_files(resolved_stage_root)
+        if staged_missing_paths:
+            rendered = ", ".join(str(path) for path in staged_missing_paths[:10])
+            print(
+                "Existing staged OASIS-2 bundle is incomplete and will be restaged. "
+                f"Examples: {rendered}"
+            )
+            shutil.rmtree(resolved_stage_root)
+        else:
+            print(f"Reusing staged OASIS-2 bundle: {resolved_stage_root}")
+            return resolved_stage_root
 
     resolved_stage_root.parent.mkdir(parents=True, exist_ok=True)
     print(f"Staging OASIS-2 bundle to local disk: {resolved_bundle_root} -> {resolved_stage_root}")
     shutil.copytree(resolved_bundle_root, resolved_stage_root)
+    staged_missing_paths = _find_missing_bundle_reference_files(resolved_stage_root)
+    if staged_missing_paths:
+        rendered = ", ".join(str(path) for path in staged_missing_paths[:10])
+        raise FileNotFoundError(
+            "The staged OASIS-2 bundle is missing files referenced by the bundle manifest after copy. "
+            f"Examples: {rendered}"
+        )
     return resolved_stage_root
 
 
@@ -246,6 +269,32 @@ def _rewrite_bundle_relative_meta(meta_payload: dict[str, Any], *, bundle_root: 
     rewritten["session_dir"] = str(image_path.parent.parent)
     rewritten["raw_dir"] = str(image_path.parent)
     return rewritten
+
+
+def _find_missing_bundle_reference_files(bundle_root: Path) -> list[Path]:
+    """Return missing files referenced by the portable OASIS-2 bundle manifest."""
+
+    relative_manifest_path = bundle_root / "backend_reference" / "oasis2_session_manifest_relative.csv"
+    if not relative_manifest_path.exists():
+        return [relative_manifest_path]
+
+    relative_manifest = pd.read_csv(relative_manifest_path)
+    missing_paths: list[Path] = []
+    for row in relative_manifest.to_dict(orient="records"):
+        image_value = str(row.get("image", "")).strip()
+        if image_value:
+            image_path = (bundle_root / image_value).resolve()
+            if not image_path.exists():
+                missing_paths.append(image_path)
+
+        meta_payload = json.loads(row.get("meta") or "{}")
+        paired_image_value = meta_payload.get("paired_image")
+        if isinstance(paired_image_value, str) and paired_image_value.strip():
+            paired_candidate = Path(paired_image_value)
+            paired_path = paired_candidate if paired_candidate.is_absolute() else (bundle_root / paired_candidate).resolve()
+            if not paired_path.exists():
+                missing_paths.append(paired_path)
+    return missing_paths
 
 
 def _materialize_runtime_manifest_from_bundle_reference(

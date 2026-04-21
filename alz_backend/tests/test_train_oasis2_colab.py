@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -286,3 +287,27 @@ def test_oasis2_colab_prefers_repo_bundled_demographics_before_network(tmp_path:
     )
 
     assert resolved == repo_demographics_path
+
+
+def test_oasis2_colab_restages_when_cached_bundle_is_incomplete(tmp_path: Path) -> None:
+    """An incomplete cached staged bundle should be replaced from the source bundle automatically."""
+
+    module = _load_oasis2_colab_module()
+    bundle_root = _seed_oasis2_bundle_source(_build_settings(tmp_path))
+    stage_root = tmp_path / "oasis2_stage" / "OASIS-2"
+    shutil.copytree(bundle_root, stage_root)
+
+    missing_img_path = stage_root / "OAS2_RAW_PART1" / "OAS2_0001_MR1" / "RAW" / "mpr-1.nifti.img"
+    missing_img_path.unlink()
+    assert not missing_img_path.exists()
+    assert module._find_missing_bundle_reference_files(stage_root)
+
+    resolved = module._stage_bundle_to_local(
+        bundle_root=bundle_root,
+        stage_root=stage_root,
+        force_restage=False,
+    )
+
+    assert resolved == stage_root.resolve()
+    assert missing_img_path.exists()
+    assert not module._find_missing_bundle_reference_files(stage_root)
