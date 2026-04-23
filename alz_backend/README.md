@@ -134,6 +134,14 @@ review notes/status fields even when rebuilt:
 .\build_oasis_reviewer_decision_log.cmd
 ```
 
+Then summarize the current decision-log state into a reviewer-learning report
+that tells you whether the queue is still pending-only or has enough reviewed
+cases to start disagreement/threshold analysis:
+
+```powershell
+.\build_oasis_reviewer_learning_report.cmd
+```
+
 And open the key outputs quickly:
 
 ```powershell
@@ -182,6 +190,7 @@ Useful entrypoints:
 - [build_oasis_local_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_local_presentation_summary.py)
 - [build_oasis_review_pack.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_review_pack.py)
 - [build_oasis_reviewer_decision_log.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_reviewer_decision_log.py)
+- [build_oasis_reviewer_learning_report.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_reviewer_learning_report.py)
 - [open_oasis_local_outputs.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/open_oasis_local_outputs.py)
 - [build_oasis_baseline_comparison.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_baseline_comparison.py)
 - [build_oasis_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_presentation_summary.py)
@@ -205,6 +214,7 @@ Useful entrypoints:
 - [build_oasis_local_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_local_presentation_summary.cmd)
 - [build_oasis_review_pack.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_review_pack.cmd)
 - [build_oasis_reviewer_decision_log.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_reviewer_decision_log.cmd)
+- [build_oasis_reviewer_learning_report.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_reviewer_learning_report.cmd)
 - [open_oasis_local_outputs.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/open_oasis_local_outputs.cmd)
 - [build_oasis_baseline_comparison.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_baseline_comparison.cmd)
 - [build_oasis_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_presentation_summary.cmd)

@@ -83,6 +83,13 @@ def open_oasis_local_outputs(
         / "oasis_review_decision_log"
         / "reviewer_decision_log_summary.md"
     )
+    reviewer_learning_summary_path = (
+        resolved_settings.outputs_root
+        / "reports"
+        / "reviewer_learning"
+        / "oasis_reviewer_learning_report"
+        / "oasis_reviewer_learning_report.md"
+    )
     paths = [
         summary_path,
         workflow_md_path,
@@ -94,6 +101,8 @@ def open_oasis_local_outputs(
         paths.append(review_summary_path)
     if reviewer_log_summary_path.exists():
         paths.append(reviewer_log_summary_path)
+    if reviewer_learning_summary_path.exists():
+        paths.append(reviewer_learning_summary_path)
     for path in paths:
         os.startfile(str(path))  # type: ignore[attr-defined]
     return paths
