@@ -120,6 +120,13 @@ workflow artifacts:
 .\build_oasis_local_presentation_summary.cmd
 ```
 
+If you want a focused manual-review pack for only the flagged low-confidence
+cases from the latest local workflow:
+
+```powershell
+.\build_oasis_review_pack.cmd
+```
+
 And open the key outputs quickly:
 
 ```powershell
@@ -166,6 +173,7 @@ Useful entrypoints:
 - [batch_predict_oasis_scans.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/batch_predict_oasis_scans.py)
 - [build_oasis_local_workflow.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_local_workflow.py)
 - [build_oasis_local_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_local_presentation_summary.py)
+- [build_oasis_review_pack.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_review_pack.py)
 - [open_oasis_local_outputs.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/open_oasis_local_outputs.py)
 - [build_oasis_baseline_comparison.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_baseline_comparison.py)
 - [build_oasis_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_presentation_summary.py)
@@ -187,6 +195,7 @@ Useful entrypoints:
 - [build_oasis_batch_inference.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_batch_inference.cmd)
 - [build_oasis_local_workflow.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_local_workflow.cmd)
 - [build_oasis_local_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_local_presentation_summary.cmd)
+- [build_oasis_review_pack.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_review_pack.cmd)
 - [open_oasis_local_outputs.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/open_oasis_local_outputs.cmd)
 - [build_oasis_baseline_comparison.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_baseline_comparison.cmd)
 - [build_oasis_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_presentation_summary.cmd)
