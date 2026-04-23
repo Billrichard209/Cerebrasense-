@@ -90,6 +90,20 @@ def open_oasis_local_outputs(
         / "oasis_reviewer_learning_report"
         / "oasis_reviewer_learning_report.md"
     )
+    specialist_handoff_summary_path = (
+        resolved_settings.outputs_root
+        / "reports"
+        / "review"
+        / "oasis_specialist_handoff_pack"
+        / "specialist_handoff_summary.md"
+    )
+    hard_case_benchmark_summary_path = (
+        resolved_settings.outputs_root
+        / "reports"
+        / "benchmark"
+        / "oasis_hard_case_benchmark"
+        / "hard_case_benchmark_summary.md"
+    )
     paths = [
         summary_path,
         workflow_md_path,
@@ -103,6 +117,10 @@ def open_oasis_local_outputs(
         paths.append(reviewer_log_summary_path)
     if reviewer_learning_summary_path.exists():
         paths.append(reviewer_learning_summary_path)
+    if specialist_handoff_summary_path.exists():
+        paths.append(specialist_handoff_summary_path)
+    if hard_case_benchmark_summary_path.exists():
+        paths.append(hard_case_benchmark_summary_path)
     for path in paths:
         os.startfile(str(path))  # type: ignore[attr-defined]
     return paths
