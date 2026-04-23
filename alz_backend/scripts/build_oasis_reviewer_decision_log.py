@@ -136,6 +136,7 @@ def build_oasis_reviewer_decision_log(
 
     pending_count = int((decision_log["reviewer_status"].astype(str).str.strip() == "pending").sum())
     completed_count = int((decision_log["reviewer_status"].astype(str).str.strip() == "completed").sum())
+    triaged_count = int((decision_log["reviewer_status"].astype(str).str.strip() == "triaged").sum())
     escalated_count = int((decision_log["resolution_state"].astype(str).str.strip() == "escalated").sum())
     model_agreement_count = int((decision_log["reviewer_agrees_with_model"].astype(str).str.lower() == "yes").sum())
     model_disagreement_count = int((decision_log["reviewer_agrees_with_model"].astype(str).str.lower() == "no").sum())
@@ -150,6 +151,7 @@ def build_oasis_reviewer_decision_log(
         "review_case_count": int(len(decision_log)),
         "pending_case_count": pending_count,
         "completed_case_count": completed_count,
+        "triaged_case_count": triaged_count,
         "escalated_case_count": escalated_count,
         "model_agreement_count": model_agreement_count,
         "model_disagreement_count": model_disagreement_count,
@@ -157,6 +159,7 @@ def build_oasis_reviewer_decision_log(
             "This decision log is a reviewer-facing template for the flagged low-confidence OASIS cases.",
             "Rebuilding the log preserves any existing reviewer-entered fields for matching session_id/scan_path rows.",
             "Use reviewer_status, reviewer_decision, and follow_up_action to turn uncertain predictions into structured feedback.",
+            "Use reviewer_status=triaged when only non-clinical triage/escalation was performed and no medical adjudication was made.",
         ],
         "cases": review_summary.get("cases", []),
     }
@@ -170,6 +173,7 @@ def build_oasis_reviewer_decision_log(
         f"- review_case_count: {summary['review_case_count']}",
         f"- pending_case_count: {pending_count}",
         f"- completed_case_count: {completed_count}",
+        f"- triaged_case_count: {triaged_count}",
         f"- escalated_case_count: {escalated_count}",
         f"- decision_log_csv: {decision_log_csv}",
         "",

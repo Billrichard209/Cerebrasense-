@@ -89,3 +89,35 @@ def test_build_oasis_reviewer_learning_report_counts_disagreements(tmp_path: Pat
     assert summary["completed_case_count"] == 1
     assert summary["disagreement_count"] == 1
     assert summary["recommended_action"] == "analyze_disagreement_cases"
+
+
+def test_build_oasis_reviewer_learning_report_handles_triaged_only_state(tmp_path: Path) -> None:
+    """Triaged-only logs should recommend specialist review instead of learning actions."""
+
+    settings = _settings(tmp_path)
+    review_root = settings.outputs_root / "reports" / "review" / "oasis_review_decision_log"
+    review_root.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        [
+            {
+                "rank": 1,
+                "subject_id": "OAS1_0001",
+                "session_id": "OAS1_0001_MR1",
+                "label_name": "demented",
+                "probability_score": "0.51",
+                "reviewer_status": "triaged",
+                "reviewer_agrees_with_model": "",
+                "resolution_state": "escalated",
+                "reviewer_priority": "high",
+                "reviewer_decision": "uncertain_non_clinical_triage",
+                "follow_up_action": "needs_specialist_review",
+            }
+        ]
+    ).to_csv(review_root / "reviewer_decision_log.csv", index=False)
+
+    summary = learning_module.build_oasis_reviewer_learning_report(settings=settings)
+
+    assert summary["completed_case_count"] == 0
+    assert summary["triaged_case_count"] == 1
+    assert summary["escalated_case_count"] == 1
+    assert summary["recommended_action"] == "seek_specialist_review_capacity"

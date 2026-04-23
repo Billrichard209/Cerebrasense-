@@ -142,6 +142,14 @@ cases to start disagreement/threshold analysis:
 .\build_oasis_reviewer_learning_report.cmd
 ```
 
+If the cases are escalated and need to be handed off cleanly for specialist
+follow-up, build one handoff folder that gathers the escalated CSV, copied
+prediction payloads, and the key review summaries:
+
+```powershell
+.\build_oasis_specialist_handoff_pack.cmd
+```
+
 And open the key outputs quickly:
 
 ```powershell
@@ -191,6 +199,7 @@ Useful entrypoints:
 - [build_oasis_review_pack.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_review_pack.py)
 - [build_oasis_reviewer_decision_log.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_reviewer_decision_log.py)
 - [build_oasis_reviewer_learning_report.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_reviewer_learning_report.py)
+- [build_oasis_specialist_handoff_pack.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_specialist_handoff_pack.py)
 - [open_oasis_local_outputs.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/open_oasis_local_outputs.py)
 - [build_oasis_baseline_comparison.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_baseline_comparison.py)
 - [build_oasis_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_presentation_summary.py)
@@ -215,6 +224,7 @@ Useful entrypoints:
 - [build_oasis_review_pack.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_review_pack.cmd)
 - [build_oasis_reviewer_decision_log.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_reviewer_decision_log.cmd)
 - [build_oasis_reviewer_learning_report.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_reviewer_learning_report.cmd)
+- [build_oasis_specialist_handoff_pack.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_specialist_handoff_pack.cmd)
 - [open_oasis_local_outputs.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/open_oasis_local_outputs.cmd)
 - [build_oasis_baseline_comparison.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_baseline_comparison.cmd)
 - [build_oasis_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_presentation_summary.cmd)

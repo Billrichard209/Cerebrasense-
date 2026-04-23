@@ -30,10 +30,12 @@ def _normalized(series: pd.Series) -> pd.Series:
     return series.fillna("").astype(str).str.strip().str.lower()
 
 
-def _recommended_action(*, completed_count: int, disagreement_count: int) -> str:
+def _recommended_action(*, completed_count: int, disagreement_count: int, triaged_count: int) -> str:
     """Return the next best reviewer-learning action."""
 
     if completed_count == 0:
+        if triaged_count > 0:
+            return "seek_specialist_review_capacity"
         return "fill_reviewer_decision_log"
     if disagreement_count > 0:
         return "analyze_disagreement_cases"
@@ -65,7 +67,8 @@ def build_oasis_reviewer_learning_report(
     resolution_state = _normalized(frame.get("resolution_state", pd.Series(dtype="string")))
 
     completed = frame.loc[reviewer_status == "completed"].copy()
-    pending = frame.loc[reviewer_status != "completed"].copy()
+    triaged = frame.loc[reviewer_status == "triaged"].copy()
+    pending = frame.loc[reviewer_status == "pending"].copy()
     disagreements = completed.loc[reviewer_agreement == "no"].copy()
     agreements = completed.loc[reviewer_agreement == "yes"].copy()
     escalated = frame.loc[resolution_state == "escalated"].copy()
@@ -80,13 +83,18 @@ def build_oasis_reviewer_learning_report(
 
     review_case_count = int(len(frame))
     completed_count = int(len(completed))
+    triaged_count = int(len(triaged))
     pending_count = int(len(pending))
     agreement_count = int(len(agreements))
     disagreement_count = int(len(disagreements))
     escalated_count = int(len(escalated))
     agreement_rate = (agreement_count / completed_count) if completed_count else None
     disagreement_rate = (disagreement_count / completed_count) if completed_count else None
-    recommended_action = _recommended_action(completed_count=completed_count, disagreement_count=disagreement_count)
+    recommended_action = _recommended_action(
+        completed_count=completed_count,
+        disagreement_count=disagreement_count,
+        triaged_count=triaged_count,
+    )
 
     pending_preview = pending[
         [column for column in ["rank", "subject_id", "session_id", "label_name", "probability_score", "reviewer_priority"] if column in pending.columns]
@@ -102,6 +110,7 @@ def build_oasis_reviewer_learning_report(
         "output_root": str(output_root),
         "review_case_count": review_case_count,
         "completed_case_count": completed_count,
+        "triaged_case_count": triaged_count,
         "pending_case_count": pending_count,
         "agreement_count": agreement_count,
         "disagreement_count": disagreement_count,
@@ -129,6 +138,7 @@ def build_oasis_reviewer_learning_report(
         f"- decision_log_name: {safe_decision_log_name}",
         f"- review_case_count: {review_case_count}",
         f"- completed_case_count: {completed_count}",
+        f"- triaged_case_count: {triaged_count}",
         f"- pending_case_count: {pending_count}",
         f"- disagreement_count: {disagreement_count}",
         f"- escalated_case_count: {escalated_count}",
@@ -138,12 +148,20 @@ def build_oasis_reviewer_learning_report(
         "",
     ]
     if completed_count == 0:
-        md_lines.extend(
-            [
-                "- No reviewer-completed cases exist yet, so this report is acting as a readiness/throughput checkpoint.",
-                "- The next best move is to review the highest-priority pending cases in the reviewer decision log.",
-            ]
-        )
+        if triaged_count > 0:
+            md_lines.extend(
+                [
+                    "- Cases have been triaged/escalated, but no medically adjudicated reviewer-completed cases exist yet.",
+                    "- The next best move is to route these cases to a qualified specialist or keep them out of label-learning decisions.",
+                ]
+            )
+        else:
+            md_lines.extend(
+                [
+                    "- No reviewer-completed cases exist yet, so this report is acting as a readiness/throughput checkpoint.",
+                    "- The next best move is to review the highest-priority pending cases in the reviewer decision log.",
+                ]
+            )
     else:
         md_lines.extend(
             [
