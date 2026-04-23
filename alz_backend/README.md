@@ -96,6 +96,36 @@ Then build a demo-ready local artifact bundle:
   --device cpu
 ```
 
+If you want a folder-level OASIS-only batch pass on local scans:
+
+```powershell
+.\build_oasis_batch_inference.cmd `
+  --scan-root "C:\path\to\oasis_scans" `
+  --device cpu
+```
+
+If you want one local OASIS workflow that builds both the demo bundle and the
+batch inference report together:
+
+```powershell
+.\build_oasis_local_workflow.cmd `
+  --scan-root "C:\path\to\oasis_scans" `
+  --device cpu
+```
+
+Then build one compact status/presentation summary from the latest local OASIS
+workflow artifacts:
+
+```powershell
+.\build_oasis_local_presentation_summary.cmd
+```
+
+And open the key outputs quickly:
+
+```powershell
+.\open_oasis_local_outputs.cmd
+```
+
 If you want to compare the current active local baseline against an imported candidate before switching serving defaults:
 
 ```powershell
@@ -133,6 +163,10 @@ Useful entrypoints:
 - [import_promoted_oasis_run.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/import_promoted_oasis_run.py)
 - [check_oasis_productization.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/check_oasis_productization.py)
 - [build_oasis_demo_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_demo_bundle.py)
+- [batch_predict_oasis_scans.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/batch_predict_oasis_scans.py)
+- [build_oasis_local_workflow.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_local_workflow.py)
+- [build_oasis_local_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_local_presentation_summary.py)
+- [open_oasis_local_outputs.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/open_oasis_local_outputs.py)
 - [build_oasis_baseline_comparison.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_baseline_comparison.py)
 - [build_oasis_presentation_summary.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_oasis_presentation_summary.py)
 - [build_project_status_bundle.py](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/alz_backend/scripts/build_project_status_bundle.py)
@@ -150,6 +184,10 @@ Useful entrypoints:
 - [import_promoted_oasis_run.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/import_promoted_oasis_run.cmd)
 - [check_oasis_productization.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/check_oasis_productization.cmd)
 - [build_oasis_demo_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_demo_bundle.cmd)
+- [build_oasis_batch_inference.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_batch_inference.cmd)
+- [build_oasis_local_workflow.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_local_workflow.cmd)
+- [build_oasis_local_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_local_presentation_summary.cmd)
+- [open_oasis_local_outputs.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/open_oasis_local_outputs.cmd)
 - [build_oasis_baseline_comparison.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_baseline_comparison.cmd)
 - [build_oasis_presentation_summary.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_oasis_presentation_summary.cmd)
 - [build_project_status_bundle.cmd](/c:/Users/Nguyen%20Quang%20Minh/OneDrive/Desktop/Cerebrasense/archive%20(1)/build_project_status_bundle.cmd)
