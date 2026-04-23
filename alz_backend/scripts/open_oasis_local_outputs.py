@@ -69,6 +69,20 @@ def open_oasis_local_outputs(
     workflow_md_path = _resolve_workflow_summary_md_path(workflow_summary, workflow_summary_path)
     if not workflow_md_path.exists():
         raise FileNotFoundError(f"Workflow markdown summary not found: {workflow_md_path}")
+    review_summary_path = (
+        resolved_settings.outputs_root
+        / "reports"
+        / "review"
+        / "oasis_review_pack"
+        / "review_pack_summary.md"
+    )
+    reviewer_log_summary_path = (
+        resolved_settings.outputs_root
+        / "reports"
+        / "review"
+        / "oasis_review_decision_log"
+        / "reviewer_decision_log_summary.md"
+    )
     paths = [
         summary_path,
         workflow_md_path,
@@ -76,6 +90,10 @@ def open_oasis_local_outputs(
         Path(str(workflow_summary["demo_bundle_root"])).resolve(),
         Path(str(workflow_summary["batch_report_root"])).resolve(),
     ]
+    if review_summary_path.exists():
+        paths.append(review_summary_path)
+    if reviewer_log_summary_path.exists():
+        paths.append(reviewer_log_summary_path)
     for path in paths:
         os.startfile(str(path))  # type: ignore[attr-defined]
     return paths
