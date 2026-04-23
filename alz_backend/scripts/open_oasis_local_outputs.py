@@ -29,6 +29,15 @@ def _load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def _resolve_workflow_summary_md_path(workflow_summary: dict[str, Any], workflow_summary_path: Path) -> Path:
+    """Resolve the workflow markdown path even for older summary JSON files."""
+
+    raw_value = workflow_summary.get("summary_md_path")
+    if isinstance(raw_value, str) and raw_value.strip():
+        return Path(raw_value).expanduser().resolve()
+    return workflow_summary_path.with_name("workflow_summary.md").resolve()
+
+
 def open_oasis_local_outputs(
     *,
     settings: AppSettings | None = None,
@@ -57,9 +66,12 @@ def open_oasis_local_outputs(
         raise FileNotFoundError(f"Presentation summary not found: {summary_path}")
 
     workflow_summary = _load_json(workflow_summary_path)
+    workflow_md_path = _resolve_workflow_summary_md_path(workflow_summary, workflow_summary_path)
+    if not workflow_md_path.exists():
+        raise FileNotFoundError(f"Workflow markdown summary not found: {workflow_md_path}")
     paths = [
         summary_path,
-        Path(str(workflow_summary["summary_md_path"])).resolve(),
+        workflow_md_path,
         Path(str(workflow_summary["batch_predictions_csv"])).resolve(),
         Path(str(workflow_summary["demo_bundle_root"])).resolve(),
         Path(str(workflow_summary["batch_report_root"])).resolve(),

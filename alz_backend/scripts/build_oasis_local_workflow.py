@@ -88,9 +88,6 @@ def build_oasis_local_workflow(
             "The demo bundle exercises the API-facing path while the batch report gives a folder-level inference snapshot.",
         ],
     }
-    summary_json_path = workflow_root / "workflow_summary.json"
-    summary_json_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-
     md_lines = [
         "# OASIS Local Workflow",
         "",
@@ -106,11 +103,12 @@ def build_oasis_local_workflow(
         "",
     ]
     md_lines.extend(f"- {note}" for note in summary["notes"])
+    summary_json_path = workflow_root / "workflow_summary.json"
     summary_md_path = workflow_root / "workflow_summary.md"
-    summary_md_path.write_text("\n".join(md_lines), encoding="utf-8")
-
     summary["summary_json_path"] = str(summary_json_path)
     summary["summary_md_path"] = str(summary_md_path)
+    summary_json_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    summary_md_path.write_text("\n".join(md_lines), encoding="utf-8")
     return summary
 
 

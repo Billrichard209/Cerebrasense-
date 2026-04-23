@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from src.configs.runtime import AppSettings
@@ -65,3 +66,6 @@ def test_build_oasis_local_workflow_writes_combined_summary(tmp_path: Path, monk
     assert summary["demo_scan_path"] == str(demo_scan)
     assert Path(summary["summary_json_path"]).exists()
     assert Path(summary["summary_md_path"]).exists()
+    saved_summary = json.loads(Path(summary["summary_json_path"]).read_text(encoding="utf-8"))
+    assert saved_summary["summary_json_path"] == summary["summary_json_path"]
+    assert saved_summary["summary_md_path"] == summary["summary_md_path"]
