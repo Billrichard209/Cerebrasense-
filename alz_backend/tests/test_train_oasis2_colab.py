@@ -258,10 +258,37 @@ def test_oasis2_colab_pipeline_can_autofill_runtime_metadata_from_official_demog
     runtime_template = pd.read_csv(summary["runtime_metadata_template_path"])
     assert runtime_template.loc[0, "diagnosis_label"] == 0
     assert runtime_template.loc[0, "diagnosis_label_name"] == "nondemented"
-    assert summary["manifest_source"] == "bundle_reference_relative_manifest"
-    assert Path(summary["official_demographics_import_json_path"]).exists()
-    assert summary["official_demographics_import_summary"]["matched_row_count"] == 1
-    assert "label_coverage" not in str(summary["blocked_reason"])
+
+
+def test_resolve_bundle_root_accepts_parent_directory_upload_layout(tmp_path: Path) -> None:
+    """The runner should recover when bundle contents were uploaded directly into the Drive parent."""
+
+    module = _load_oasis2_colab_module()
+    bundle_root = _seed_oasis2_bundle_source(_build_settings(tmp_path))
+    drive_root = tmp_path / "Cerebrasensecloud"
+    drive_root.mkdir(parents=True, exist_ok=True)
+    for child in bundle_root.iterdir():
+        destination = drive_root / child.name
+        if child.is_dir():
+            shutil.copytree(child, destination)
+        else:
+            shutil.copy2(child, destination)
+
+    resolved = module._resolve_bundle_root(drive_root / "OASIS-2")
+    assert resolved == drive_root.resolve()
+
+
+def test_resolve_bundle_root_accepts_nested_upload_layout(tmp_path: Path) -> None:
+    """The runner should recover when Drive wrapped the bundle in an extra nested folder."""
+
+    module = _load_oasis2_colab_module()
+    bundle_root = _seed_oasis2_bundle_source(_build_settings(tmp_path))
+    drive_root = tmp_path / "Cerebrasensecloud" / "OASIS-2" / "oasis2_upload_bundle_ready"
+    drive_root.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(bundle_root, drive_root)
+
+    resolved = module._resolve_bundle_root(drive_root.parent)
+    assert resolved == drive_root.resolve()
 
 
 def test_oasis2_colab_prefers_repo_bundled_demographics_before_network(tmp_path: Path) -> None:

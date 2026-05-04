@@ -48,6 +48,12 @@ from src.training.oasis2_research import default_oasis2_train_config_path, run_r
 from src.training.oasis_research import ResearchTrainingError, load_research_oasis_training_config  # noqa: E402
 
 
+def _log_progress(message: str) -> None:
+    """Emit one flushed progress line for long-running Colab steps."""
+
+    print(message, flush=True)
+
+
 @dataclass(slots=True)
 class OASIS2RuntimeRefreshResult:
     """Artifacts produced when rebuilding runtime data from a bundle source root."""
@@ -169,7 +175,9 @@ def _download_official_demographics(*, outputs_root: Path, demographics_url: str
     destination = imports_root / "oasis2_official_demographics.xlsx"
     if destination.exists():
         return destination
+    _log_progress(f"Downloading official OASIS-2 demographics sheet: {demographics_url}")
     urllib.request.urlretrieve(demographics_url, destination)
+    _log_progress(f"Downloaded official demographics sheet to: {destination}")
     return destination
 
 
@@ -221,6 +229,7 @@ def _stage_bundle_to_local(*, bundle_root: Path, stage_root: Path, force_restage
 
     resolved_bundle_root = bundle_root.expanduser().resolve()
     resolved_stage_root = stage_root.expanduser().resolve()
+    _log_progress(f"Checking uploaded OASIS-2 bundle references under: {resolved_bundle_root}")
     source_missing_paths = _find_missing_bundle_reference_files(resolved_bundle_root)
     if source_missing_paths:
         rendered = ", ".join(str(path) for path in source_missing_paths[:10])
@@ -229,23 +238,25 @@ def _stage_bundle_to_local(*, bundle_root: Path, stage_root: Path, force_restage
             f"backend_reference/oasis2_session_manifest_relative.csv. Examples: {rendered}"
         )
     if resolved_stage_root.exists() and force_restage:
+        _log_progress(f"Removing existing staged OASIS-2 bundle: {resolved_stage_root}")
         shutil.rmtree(resolved_stage_root)
     if resolved_stage_root.exists():
         staged_missing_paths = _find_missing_bundle_reference_files(resolved_stage_root)
         if staged_missing_paths:
             rendered = ", ".join(str(path) for path in staged_missing_paths[:10])
-            print(
+            _log_progress(
                 "Existing staged OASIS-2 bundle is incomplete and will be restaged. "
                 f"Examples: {rendered}"
             )
             shutil.rmtree(resolved_stage_root)
         else:
-            print(f"Reusing staged OASIS-2 bundle: {resolved_stage_root}")
+            _log_progress(f"Reusing staged OASIS-2 bundle: {resolved_stage_root}")
             return resolved_stage_root
 
     resolved_stage_root.parent.mkdir(parents=True, exist_ok=True)
-    print(f"Staging OASIS-2 bundle to local disk: {resolved_bundle_root} -> {resolved_stage_root}")
+    _log_progress(f"Staging OASIS-2 bundle to local disk: {resolved_bundle_root} -> {resolved_stage_root}")
     shutil.copytree(resolved_bundle_root, resolved_stage_root)
+    _log_progress(f"Finished staging OASIS-2 bundle to local disk: {resolved_stage_root}")
     staged_missing_paths = _find_missing_bundle_reference_files(resolved_stage_root)
     if staged_missing_paths:
         rendered = ", ".join(str(path) for path in staged_missing_paths[:10])
@@ -295,6 +306,53 @@ def _find_missing_bundle_reference_files(bundle_root: Path) -> list[Path]:
             if not paired_path.exists():
                 missing_paths.append(paired_path)
     return missing_paths
+
+
+def _looks_like_oasis2_bundle_root(bundle_root: Path) -> bool:
+    """Return whether a directory looks like a valid OASIS-2 upload bundle root."""
+
+    if not bundle_root.exists() or not bundle_root.is_dir():
+        return False
+    backend_reference_root = bundle_root / "backend_reference"
+    relative_manifest_path = backend_reference_root / "oasis2_session_manifest_relative.csv"
+    metadata_template_path = backend_reference_root / "oasis2_metadata_template.csv"
+    return relative_manifest_path.exists() and metadata_template_path.exists()
+
+
+def _resolve_bundle_root(bundle_root: Path) -> Path:
+    """Resolve the uploaded OASIS-2 bundle root, tolerating common Drive upload layouts."""
+
+    requested_root = bundle_root.expanduser().resolve()
+    if _looks_like_oasis2_bundle_root(requested_root):
+        return requested_root
+
+    candidates: list[Path] = []
+    parent = requested_root.parent
+    if parent.exists():
+        # Common case: user uploaded the bundle contents directly into Cerebrasensecloud/
+        candidates.append(parent)
+        # Common case: Drive created an extra nested folder during upload/extraction.
+        candidates.extend(path for path in requested_root.glob("*") if path.is_dir())
+        candidates.extend(path for path in parent.glob("*") if path.is_dir())
+
+    seen: set[Path] = set()
+    for candidate in candidates:
+        resolved_candidate = candidate.expanduser().resolve()
+        if resolved_candidate in seen:
+            continue
+        seen.add(resolved_candidate)
+        if _looks_like_oasis2_bundle_root(resolved_candidate):
+            _log_progress(
+                "Auto-detected OASIS-2 bundle root: "
+                f"requested={requested_root} resolved={resolved_candidate}"
+            )
+            return resolved_candidate
+
+    raise FileNotFoundError(
+        "OASIS-2 bundle root not found or does not look like a valid upload bundle. "
+        f"Requested: {requested_root}. Expected backend_reference/oasis2_session_manifest_relative.csv "
+        "and backend_reference/oasis2_metadata_template.csv under the bundle root."
+    )
 
 
 def _materialize_runtime_manifest_from_bundle_reference(
@@ -460,14 +518,17 @@ def _refresh_runtime_from_source(
     """Rebuild OASIS-2 runtime artifacts from the selected source root."""
 
     resolved_source_root = source_root.expanduser().resolve()
+    _log_progress(f"Refreshing runtime artifacts from source root: {resolved_source_root}")
     os.environ["ALZ_OASIS2_SOURCE_DIR"] = str(resolved_source_root)
     get_app_settings.cache_clear()
     settings = get_app_settings()
 
+    _log_progress("Copying OASIS-2 metadata template into runtime data root")
     runtime_metadata_template_path = _copy_metadata_template_to_runtime(
         source_path=metadata_source_path,
         data_root=settings.data_root,
     )
+    _log_progress(f"Runtime metadata template path: {runtime_metadata_template_path}")
     official_demographics_path: Path | None = None
     official_demographics_import_json_path: Path | None = None
     official_demographics_import_md_path: Path | None = None
@@ -477,6 +538,7 @@ def _refresh_runtime_from_source(
         metadata_template_path=runtime_metadata_template_path,
         settings=settings,
     ):
+        _log_progress("Runtime metadata template has no labels; resolving official OASIS-2 demographics source")
         official_demographics_path = _resolve_official_demographics_source(
             project_root=settings.project_root,
             bundle_root=resolved_source_root,
@@ -484,6 +546,7 @@ def _refresh_runtime_from_source(
             override_path=demographics_path,
             demographics_url=official_demographics_url,
         )
+        _log_progress(f"Merging official OASIS-2 demographics from: {official_demographics_path}")
         demographics_summary = import_oasis2_official_demographics_into_metadata_template(
             official_demographics_path,
             settings=settings,
@@ -499,10 +562,12 @@ def _refresh_runtime_from_source(
             settings=settings,
             file_stem=f"oasis2_official_demographics_import_{file_stem_suffix}",
         )
+        _log_progress("Saved official demographics import summary artifacts")
         official_demographics_import_payload = demographics_summary.to_payload()
 
     relative_manifest_path = resolved_source_root / "backend_reference" / "oasis2_session_manifest_relative.csv"
     if relative_manifest_path.exists():
+        _log_progress("Materializing runtime manifest from bundle reference manifest")
         (
             manifest_path,
             longitudinal_records_path,
@@ -514,6 +579,7 @@ def _refresh_runtime_from_source(
         )
         manifest_source = "bundle_reference_relative_manifest"
     else:
+        _log_progress("Bundle reference manifest missing; rescanning raw OASIS-2 bundle layout")
         manifest_result = build_oasis2_session_manifest(
             settings=settings,
             source_root=resolved_source_root,
@@ -524,6 +590,7 @@ def _refresh_runtime_from_source(
         manifest_summary_path = manifest_result.summary_path
         manifest_source = "raw_bundle_rescan"
 
+    _log_progress("Merging OASIS-2 metadata template into labeled-prep manifest")
     metadata_summary = merge_oasis2_metadata_template(
         settings=settings,
         metadata_path=runtime_metadata_template_path,
@@ -533,15 +600,21 @@ def _refresh_runtime_from_source(
         settings=settings,
         file_stem=f"oasis2_metadata_adapter_status_{file_stem_suffix}",
     )
+    _log_progress("Building OASIS-2 subject-safe split plan")
     split_summary = build_oasis2_subject_safe_split_plan(
         settings=settings,
         metadata_path=runtime_metadata_template_path,
     )
+    _log_progress("Building OASIS-2 training readiness report")
     readiness_report = build_oasis2_training_readiness_report(settings=settings)
     readiness_json_path, readiness_md_path = save_oasis2_training_readiness_report(
         readiness_report,
         settings=settings,
         file_stem=f"oasis2_training_readiness_{file_stem_suffix}",
+    )
+    _log_progress(
+        "Runtime refresh complete with readiness status: "
+        f"{readiness_report.to_payload().get('overall_status')}"
     )
 
     return OASIS2RuntimeRefreshResult(
@@ -608,26 +681,29 @@ def build_parser() -> argparse.ArgumentParser:
 def run_oasis2_colab_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     """Run the OASIS-2 bundle pipeline and return a JSON-safe summary payload."""
 
+    _log_progress("Starting OASIS-2 Colab bundle pipeline")
     _mount_drive_if_requested(bool(getattr(args, "mount_drive", False)))
 
     project_root = args.project_root.expanduser().resolve() if args.project_root is not None else PROJECT_ROOT
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
-    bundle_root = args.bundle_root.expanduser().resolve()
-    if not bundle_root.exists():
-        raise FileNotFoundError(f"OASIS-2 bundle root not found: {bundle_root}")
-
+    bundle_root = _resolve_bundle_root(args.bundle_root)
+    _log_progress(f"Resolved OASIS-2 bundle root: {bundle_root}")
     data_root, outputs_root = _configure_runtime_roots(project_root=project_root, runtime_root=args.runtime_root)
     get_app_settings.cache_clear()
     settings = get_app_settings()
+    _log_progress(f"Runtime data root: {data_root}")
+    _log_progress(f"Runtime outputs root: {outputs_root}")
 
+    _log_progress("Inspecting uploaded OASIS-2 bundle")
     upload_report = inspect_oasis2_upload_bundle(settings=settings, bundle_root=bundle_root)
     upload_json_path, upload_md_path = save_oasis2_upload_bundle_report(
         upload_report,
         settings=settings,
         file_stem="oasis2_upload_bundle_status_from_runtime",
     )
+    _log_progress(f"Upload bundle inspection status: {upload_report.overall_status}")
     if upload_report.overall_status == "fail":
         summary = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -648,8 +724,11 @@ def run_oasis2_colab_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         summary["summary_md_path"] = str(summary_md_path)
         return summary
 
+    _log_progress("Resolving OASIS-2 metadata template source")
     metadata_source_path = _resolve_bundle_metadata_source(bundle_root, args.metadata_path)
+    _log_progress(f"Resolved metadata template source: {metadata_source_path}")
     try:
+        _log_progress("Running preflight runtime refresh from Drive bundle")
         preflight_refresh = _refresh_runtime_from_source(
             source_root=bundle_root,
             metadata_source_path=metadata_source_path,
@@ -661,11 +740,13 @@ def run_oasis2_colab_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         active_refresh = preflight_refresh
 
         if preflight_refresh.readiness_payload.get("overall_status") == "pass" and args.stage_bundle_to_local:
+            _log_progress("Preflight readiness passed; staging bundle to local Colab disk")
             staged_root = _stage_bundle_to_local(
                 bundle_root=bundle_root,
                 stage_root=args.local_bundle_root,
                 force_restage=args.force_restage,
             )
+            _log_progress("Rebuilding runtime artifacts from staged local OASIS-2 bundle")
             active_refresh = _refresh_runtime_from_source(
                 source_root=staged_root,
                 metadata_source_path=metadata_source_path,
@@ -751,6 +832,7 @@ def run_oasis2_colab_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         return summary
 
     config_path = args.config or default_oasis2_train_config_path()
+    _log_progress(f"Loading OASIS-2 training config from: {config_path}")
     cfg = load_research_oasis_training_config(config_path)
     resolved_device, default_mixed_precision = _resolve_training_device(args.device)
     args.device = resolved_device
@@ -759,6 +841,7 @@ def run_oasis2_colab_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     cfg = apply_cli_overrides(cfg, args)
 
     try:
+        _log_progress(f"Starting supervised OASIS-2 training on device: {cfg.device}")
         result = run_research_oasis2_training(cfg, settings=get_app_settings())
     except ResearchTrainingError as error:
         summary["blocked_reason"] = str(error)
@@ -785,6 +868,7 @@ def run_oasis2_colab_pipeline(args: argparse.Namespace) -> dict[str, Any]:
             "final_metrics": result.final_metrics,
         }
     )
+    _log_progress(f"OASIS-2 training completed for run: {result.run_name}")
     summary_json_path, summary_md_path = _write_summary_files(
         outputs_root=outputs_root,
         summary=summary,
