@@ -1,7 +1,7 @@
 run_name: oasis2_research_baseline
-epochs: 5
+epochs: 20
 device: auto
-mixed_precision: false
+mixed_precision: true
 deterministic: true
 dry_run: false
 model_config_path:
@@ -17,7 +17,7 @@ data:
   train_fraction: 0.7
   val_fraction: 0.15
   test_fraction: 0.15
-  weighted_sampling: false
+  weighted_sampling: true
   max_train_batches:
   max_val_batches:
 
@@ -39,10 +39,10 @@ loss:
 
 early_stopping:
   enabled: true
-  patience: 5
+  patience: 6
   min_delta: 0.0
-  monitor: val_loss
-  mode: min
+  monitor: val_auroc
+  mode: max
 
 checkpoint:
   resume_from:
