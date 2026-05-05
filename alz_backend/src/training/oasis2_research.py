@@ -224,10 +224,16 @@ def run_research_oasis2_training(
 ) -> ResearchTrainingResult:
     """Run the config-driven supervised OASIS-2 training pipeline."""
 
+    print("oasis2_trainer: resolving settings", flush=True)
     resolved_settings = settings or get_app_settings()
+    print("oasis2_trainer: building config", flush=True)
     cfg = _apply_dry_run_overrides(config or ResearchOASISTrainingConfig())
+    print("oasis2_trainer: seeding", flush=True)
     set_global_seed(cfg.data.seed, deterministic=cfg.deterministic)
+    print("oasis2_trainer: creating run paths", flush=True)
     paths = build_oasis2_run_paths(resolved_settings, cfg.run_name)
+    print(f"oasis2_trainer: run_root={paths.run_root}", flush=True)
+    print("oasis2_trainer: rebuilding readiness report", flush=True)
     readiness_report = build_oasis2_training_readiness_report(
         resolved_settings,
         seed=cfg.data.seed,
@@ -240,18 +246,28 @@ def run_research_oasis2_training(
         readiness_report,
         resolved_settings,
     )
+    print(
+        f"oasis2_trainer: readiness_status={readiness_report.overall_status} "
+        f"json={readiness_json_path}",
+        flush=True,
+    )
     if readiness_report.overall_status != "pass":
         raise ResearchTrainingError(
             "OASIS-2 training is blocked because the supervised readiness gate did not pass. "
             f"See {readiness_md_path} (JSON: {readiness_json_path})."
         )
 
+    print("oasis2_trainer: loading model config", flush=True)
     model_cfg = load_oasis_model_config(cfg.model_config_path)
 
+    print("oasis2_trainer: importing torch symbols", flush=True)
     torch = _load_torch_symbols()["torch"]
+    print("oasis2_trainer: resolving device", flush=True)
     device = _resolve_device(cfg.device, torch)
     amp_enabled = bool(cfg.mixed_precision and device.startswith("cuda"))
+    print(f"oasis2_trainer: building model on {device}", flush=True)
     model = build_model(model_cfg).to(device)
+    print("oasis2_trainer: building optimizer/scheduler/loss", flush=True)
     optimizer = build_optimizer(
         model,
         name=cfg.optimizer.name,
@@ -269,8 +285,17 @@ def run_research_oasis2_training(
     )
     loss_function = build_classification_loss(cfg.loss.name)
     scaler = _build_grad_scaler(torch, amp_enabled=amp_enabled)
+    print("oasis2_trainer: building dataloaders", flush=True)
     loader_cfg, dataloaders = _build_loaders(cfg)
+    print(
+        "oasis2_trainer: dataloaders_ready "
+        f"train={len(dataloaders.dataset_bundle.train_records)} "
+        f"val={len(dataloaders.dataset_bundle.val_records)} "
+        f"test={len(dataloaders.dataset_bundle.test_records)}",
+        flush=True,
+    )
     split_summary = dict(dataloaders.dataset_bundle.split_artifacts.summary_payload)
+    print("oasis2_trainer: saving resolved config", flush=True)
     _save_resolved_oasis2_config(
         cfg=cfg,
         model_cfg=model_cfg,
