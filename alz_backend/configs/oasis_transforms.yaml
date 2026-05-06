@@ -39,8 +39,8 @@ spatial:
 
 augmentation:
   enabled: true
-  affine_probability: 0.2
-  rotate_range_degrees: [5.0, 5.0, 5.0]
-  scale_range: [0.02, 0.02, 0.02]
-  gaussian_noise_probability: 0.1
-  gaussian_noise_std: 0.01
+  affine_probability: 0.5
+  rotate_range_degrees: [15.0, 15.0, 15.0]
+  scale_range: [0.1, 0.1, 0.1]
+  gaussian_noise_probability: 0.3
+  gaussian_noise_std: 0.05

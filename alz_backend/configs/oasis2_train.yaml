@@ -1,5 +1,5 @@
 run_name: oasis2_research_baseline
-epochs: 20
+epochs: 30
 device: auto
 mixed_precision: true
 deterministic: true
@@ -7,11 +7,11 @@ dry_run: false
 model_config_path:
 
 data:
-  batch_size: 1
-  gradient_accumulation_steps: 1
-  num_workers: 0
+  batch_size: 2
+  gradient_accumulation_steps: 4
+  num_workers: 2
   cache_rate: 0.0
-  image_size: [64, 64, 64]
+  image_size: [96, 96, 96]
   seed: 42
   split_seed: 42
   train_fraction: 0.7
@@ -23,15 +23,15 @@ data:
 
 optimizer:
   name: adamw
-  learning_rate: 0.0001
-  weight_decay: 0.00001
+  learning_rate: 0.0003
+  weight_decay: 0.01
   momentum: 0.9
 
 scheduler:
-  name: none
-  step_size: 5
+  name: cosine
+  step_size: 30
   gamma: 0.5
-  patience: 2
+  patience: 5
   factor: 0.5
 
 loss:
@@ -39,8 +39,8 @@ loss:
 
 early_stopping:
   enabled: true
-  patience: 6
-  min_delta: 0.0
+  patience: 8
+  min_delta: 0.001
   monitor: val_auroc
   mode: max
 
