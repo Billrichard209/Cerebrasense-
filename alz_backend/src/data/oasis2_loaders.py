@@ -178,20 +178,28 @@ def build_oasis2_datasets(cfg: OASIS2LoaderConfig) -> OASIS2DatasetBundle:
     test_records = _records_from_split_frame(split_artifacts.test_frame)
     train_class_weights = _compute_class_weights(train_records)
 
+    # Strip variable metadata for MONAI datasets — the training loop only uses
+    # ``image`` and ``label``, and variable-length meta dicts (e.g. mmse present
+    # in some sessions but not others) cause KeyError during batch collation
+    # when batch_size > 1.  Full records are still kept in the bundle for
+    # analysis and reporting.
+    def _collation_safe(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [{"image": r["image"], "label": r["label"]} for r in records]
+
     train_dataset = build_monai_dataset(
-        train_records,
+        _collation_safe(train_records),
         build_oasis_train_transforms(cfg.transform_config),
         cache_rate=cfg.cache_rate,
         num_workers=cfg.num_workers,
     )
     val_dataset = build_monai_dataset(
-        val_records,
+        _collation_safe(val_records),
         build_oasis_val_transforms(cfg.transform_config),
         cache_rate=cfg.cache_rate,
         num_workers=cfg.num_workers,
     )
     test_dataset = build_monai_dataset(
-        test_records,
+        _collation_safe(test_records),
         build_oasis_infer_transforms(cfg.transform_config),
         cache_rate=cfg.cache_rate,
         num_workers=cfg.num_workers,
