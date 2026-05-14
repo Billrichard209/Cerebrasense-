@@ -82,7 +82,7 @@ def build_classification_loss(
     raise ValueError(f"Unsupported classification loss: {name}")
 
 
-class MonotonicityLoss(symbols["nn"].Module) if "torch" in locals() or "_load_torch_symbols" in globals() else object:
+class MonotonicityLoss:
     """
     Penalizes violations of temporal monotonicity in risk predictions.
     If P(visit_i) > P(visit_i+1) + margin, a penalty is applied.
@@ -90,14 +90,14 @@ class MonotonicityLoss(symbols["nn"].Module) if "torch" in locals() or "_load_to
 
     def __init__(self, margin: float = 0.05):
         symbols = _load_torch_symbols()
-        nn = symbols["nn"]
-        super().__init__()
+        self.nn = symbols["nn"]
+        self.torch = symbols["torch"]
         self.margin = margin
-        self.relu = nn.ReLU()
+        self.relu = self.nn.ReLU()
 
-    def forward(self, probabilities, subject_ids, visit_numbers):
-        symbols = _load_torch_symbols()
-        torch = symbols["torch"]
+    def __call__(self, probabilities, subject_ids, visit_numbers):
+        """Standard call interface for the loss."""
+        torch = self.torch
         loss = torch.tensor(0.0, device=probabilities.device)
         count = 0
         
