@@ -16,6 +16,11 @@ from src.models.factory import OASISModelConfig, build_model, load_oasis_model_c
 from src.models.registry import ModelRegistryEntry, load_current_oasis_model_entry
 from src.utils.io_utils import resolve_project_root
 
+try:
+    import onnxruntime as ort
+except ImportError:
+    ort = None
+
 
 @dataclass(slots=True, frozen=True)
 class ThresholdPolicyConfig:
@@ -264,6 +269,28 @@ def _load_cached_model_bundle(
 
     resolved_model_config_path = Path(model_config_path) if model_config_path else None
     model_config = load_oasis_model_config(resolved_model_config_path)
+
+    # ONNX Branch
+    if checkpoint_path.lower().endswith(".onnx"):
+        if ort is None:
+            raise ImportError("onnxruntime is required to load .onnx models.")
+        
+        providers = ["CPUExecutionProvider"]
+        if "cuda" in device.lower():
+            providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        
+        session = ort.InferenceSession(checkpoint_path, providers=providers)
+        # Wrap session in a mock checkpoint to satisfy the bundle schema
+        checkpoint = LoadedCheckpoint(
+            model_state_dict={},
+            optimizer_state_dict={},
+            epoch=0,
+            best_metric=0.0,
+            run_id="onnx_inference"
+        )
+        return CachedModelBundle(model=session, model_config=model_config, checkpoint=checkpoint)
+
+    # Standard PyTorch Branch
     checkpoint = load_oasis_checkpoint(checkpoint_path, device=device)
     model = build_model(model_config)
     model.load_state_dict(checkpoint.model_state_dict)

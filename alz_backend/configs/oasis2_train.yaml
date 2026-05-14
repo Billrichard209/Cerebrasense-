@@ -38,7 +38,7 @@ loss:
   name: focal_loss
   class_weights: [1.5, 1.0]
   focal_gamma: 2.0
-  temporal_lambda: 0.5
+  temporal_lambda: 5.0
 
 early_stopping:
   enabled: true

@@ -355,12 +355,24 @@ def predict_scan(
     image = sample["image"]
     batch = image.unsqueeze(0)
     torch = _load_torch_symbols()["torch"]
-    inferer = _load_monai_inferer_symbols()["SimpleInferer"]()
-    model = model.to(resolved_options.device)
-    model.eval()
-    with torch.no_grad():
-        logits = inferer(inputs=batch.to(resolved_options.device), network=model)
-        probabilities_tensor = torch.softmax(logits, dim=1)[0].detach().cpu()
+
+    # ONNX Inference Branch
+    if hasattr(model, "run"):  # is ort.InferenceSession
+        # Convert torch tensor to numpy for ONNX
+        input_name = model.get_inputs()[0].name
+        input_data = batch.detach().cpu().numpy()
+        logits = model.run(None, {input_name: input_data})[0]
+        # Convert back to torch for the softmax/calibrator consistency
+        logits_tensor = torch.from_numpy(logits)
+        probabilities_tensor = torch.softmax(logits_tensor, dim=1)[0].detach().cpu()
+    else:
+        # Standard PyTorch Branch
+        inferer = _load_monai_inferer_symbols()["SimpleInferer"]()
+        model = model.to(resolved_options.device)
+        model.eval()
+        with torch.no_grad():
+            logits = inferer(inputs=batch.to(resolved_options.device), network=model)
+            probabilities_tensor = torch.softmax(logits, dim=1)[0].detach().cpu()
     probabilities = [float(value) for value in probabilities_tensor.tolist()]
     calibrated = summarize_calibrated_confidence([probabilities], config=confidence_config)[0]
     probability_score = float(probabilities[1]) if len(probabilities) > 1 else float(max(probabilities))
