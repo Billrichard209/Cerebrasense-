@@ -46,7 +46,25 @@ def main():
     model.eval()
 
     # Create dummy input for tracing (Batch, Channel, D, H, W)
-    dummy_input = torch.randn(1, 1, *args.image_size)
+    dummy_mri = torch.randn(1, 1, *args.image_size)
+    
+    # Multimodal handling
+    if hasattr(model, "tabular_mlp"):
+        dummy_clinical = torch.randn(1, 3)  # [Age, Sex, MMSE]
+        dummy_input = (dummy_mri, dummy_clinical)
+        input_names = ["input_mri", "input_clinical"]
+        dynamic_axes = {
+            "input_mri": {0: "batch_size"},
+            "input_clinical": {0: "batch_size"},
+            "risk_logits": {0: "batch_size"}
+        }
+    else:
+        dummy_input = dummy_mri
+        input_names = ["input_mri"]
+        dynamic_axes = {
+            "input_mri": {0: "batch_size"},
+            "risk_logits": {0: "batch_size"}
+        }
 
     print(f"Exporting to ONNX: {output_path}...")
     torch.onnx.export(
@@ -56,12 +74,9 @@ def main():
         export_params=True,
         opset_version=14,
         do_constant_folding=True,
-        input_names=["input_mri"],
+        input_names=input_names,
         output_names=["risk_logits"],
-        dynamic_axes={
-            "input_mri": {0: "batch_size"},
-            "risk_logits": {0: "batch_size"}
-        }
+        dynamic_axes=dynamic_axes
     )
 
     print("✅ Export successful!")
