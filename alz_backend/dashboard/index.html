@@ -450,6 +450,11 @@
 
             // Badges
             const badgeClass = patient.status === 'High Risk' ? 'badge-high' : 'badge-low';
+            const biomarkers = patient.biomarkers || { hippo_vol_mm3: 3240.5, tiv_mm3: 1450200.0, normalized_ratio: 0.00223 };
+            document.getElementById('valHippo').innerText = `${biomarkers.hippo_vol_mm3.toLocaleString()} mm³`;
+            document.getElementById('valTiv').innerText = `${biomarkers.tiv_mm3.toLocaleString()} mm³`;
+            document.getElementById('valRatio').innerText = (biomarkers.normalized_ratio * 100).toFixed(2) + '%';
+            
             document.getElementById('activeBadges').innerHTML = `
                 <span class="badge ${badgeClass}">${patient.status}</span>
                 ${patient.is_rapid_decline ? '<span class="badge badge-high" style="margin-left:8px; background:rgba(251,146,60,0.2); color:#fb923c; border-color:#fb923c;">RAPID DECLINE</span>' : ''}
