@@ -81,6 +81,9 @@ class PredictScanOptions:
     use_cached_model: bool = True
     trace_id: str | None = None
     prediction_id: str | None = None
+    age: float | None = None
+    sex: str | None = None
+    mmse: float | None = None
 
 
 SUPPORTED_3D_SCAN_SUFFIXES = (".hdr", ".img", ".nii", ".nii.gz")
@@ -371,7 +374,18 @@ def predict_scan(
         model = model.to(resolved_options.device)
         model.eval()
         with torch.no_grad():
-            logits = inferer(inputs=batch.to(resolved_options.device), network=model)
+            # Multimodal Dispatch
+            if hasattr(model, "tabular_mlp"):
+                # Construct clinical tensor from options or defaults
+                age = float(resolved_options.age if resolved_options.age is not None else 70.0) / 100.0
+                sex_str = str(resolved_options.sex or "f").lower()
+                sex = 1.0 if sex_str == "m" else 0.0
+                mmse = float(resolved_options.mmse if resolved_options.mmse is not None else 27.0) / 30.0
+                clinical = torch.tensor([[age, sex, mmse]], dtype=torch.float32).to(resolved_options.device)
+                logits = model(batch.to(resolved_options.device), clinical)
+            else:
+                logits = inferer(inputs=batch.to(resolved_options.device), network=model)
+            
             probabilities_tensor = torch.softmax(logits, dim=1)[0].detach().cpu()
     probabilities = [float(value) for value in probabilities_tensor.tolist()]
     calibrated = summarize_calibrated_confidence([probabilities], config=confidence_config)[0]

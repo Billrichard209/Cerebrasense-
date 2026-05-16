@@ -207,17 +207,46 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     self.send_json({"error": "No model found. Export ONNX first."}, 500)
                     return
 
+                # Extract multimodal clinical data
+                age = form.getfirst('age')
+                sex = form.getfirst('sex')
+                mmse = form.getfirst('mmse')
+
                 print(f"  [Predict] Running inference for {file_item.filename} using {checkpoint.name}...")
+                print(f"            Multimodal: Age={age}, Sex={sex}, MMSE={mmse}")
                 
                 result = predict_scan(
                     scan_path=str(temp_path),
                     checkpoint_path=str(checkpoint),
                     options=PredictScanOptions(
                         output_name=f"upload_{file_item.filename}",
-                        device="cpu" # Dashboard usually on CPU for safety
+                        device="cpu",
+                        age=float(age) if age else None,
+                        sex=sex,
+                        mmse=float(mmse) if mmse else None
                     ),
                     settings=get_app_settings()
                 )
+
+                # Generate Explainability using existing module
+                if checkpoint.suffix == ".pt":
+                    try:
+                        from src.explainability.gradcam import explain_scan, ExplainScanConfig
+                        expl = explain_scan(
+                            ExplainScanConfig(
+                                scan_path=temp_path,
+                                checkpoint_path=checkpoint,
+                                output_name=f"upload_{file_item.filename}_expl",
+                                device="cpu"
+                            ),
+                            settings=get_app_settings()
+                        )
+                        import base64
+                        if expl.overlay_paths:
+                            with open(expl.overlay_paths[0], "rb") as f:
+                                result["gradcam_base64"] = base64.b64encode(f.read()).decode("utf-8")
+                    except Exception as ex:
+                        print(f"  [Explain] Grad-CAM failed: {ex}")
 
                 self.send_json(result)
 

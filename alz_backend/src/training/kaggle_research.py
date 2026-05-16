@@ -29,7 +29,7 @@ from src.utils.io_utils import ensure_directory, resolve_project_root
 from src.utils.monai_utils import load_torch_symbols
 from src.utils.seed import build_seed_snapshot, set_global_seed
 
-from .oasis_research import CheckpointConfig, EarlyStoppingConfig, LossConfig, OptimizerConfig, SchedulerConfig
+from .oasis_research import CheckpointConfig, EarlyStoppingConfig, LossConfig, OptimizerConfig, ResearchModelConfig, SchedulerConfig
 from .trainer_utils import build_classification_loss, build_optimizer, build_scheduler
 
 logger = logging.getLogger(__name__)
@@ -89,6 +89,7 @@ class ResearchKaggleTrainingConfig:
         )
     )
     checkpoint: CheckpointConfig = field(default_factory=CheckpointConfig)
+    model: ResearchModelConfig = field(default_factory=ResearchModelConfig)
 
 
 @dataclass(slots=True)
@@ -223,6 +224,9 @@ def _merge_training_config(
     checkpoint_section.update(overrides.get("checkpoint", {}))
     checkpoint_section["resume_from"] = _optional_path(checkpoint_section.get("resume_from"))
 
+    model_section = dict(asdict(default_config.model))
+    model_section.update(overrides.get("model", {}))
+
     return ResearchKaggleTrainingConfig(
         run_name=str(overrides.get("run_name", default_config.run_name)),
         epochs=int(overrides.get("epochs", default_config.epochs)),
@@ -237,6 +241,7 @@ def _merge_training_config(
         loss=LossConfig(**loss_section),
         early_stopping=EarlyStoppingConfig(**early_stopping_section),
         checkpoint=CheckpointConfig(**checkpoint_section),
+        model=ResearchModelConfig(**model_section),
     )
 
 
@@ -682,7 +687,12 @@ def _run_epoch(
             labels = _coerce_labels(batch["label"], torch, device)
 
             with _autocast_context(torch, device=device, amp_enabled=amp_enabled):
-                logits = model(inputs)
+                # Multimodal Dispatch
+                clinical = batch.get("clinical")
+                if clinical is not None and hasattr(model, "tabular_mlp"):
+                    logits = model(inputs, clinical.to(device))
+                else:
+                    logits = model(inputs)
                 loss = loss_function(logits, labels)
 
             if training:
@@ -754,7 +764,12 @@ def _evaluate_loader(
             inputs = batch["image"].to(device)
             labels = _coerce_labels(batch["label"], torch, device)
             with _autocast_context(torch, device=device, amp_enabled=amp_enabled):
-                logits = model(inputs)
+                # Multimodal Dispatch
+                clinical = batch.get("clinical")
+                if clinical is not None and hasattr(model, "tabular_mlp"):
+                    logits = model(inputs, clinical.to(device))
+                else:
+                    logits = model(inputs)
                 loss = loss_function(logits, labels)
             probabilities = torch.softmax(logits, dim=1)
             predicted_indices = torch.argmax(probabilities, dim=1)
@@ -1155,6 +1170,7 @@ def run_research_kaggle_training(
             in_channels=1,
             out_channels=len(dataloaders.class_names),
             dropout_prob=cfg.dropout_prob,
+            architecture=cfg.model.architecture or "densenet121_3d",
         )
     ).to(device)
     optimizer = build_optimizer(

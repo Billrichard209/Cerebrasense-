@@ -452,6 +452,18 @@ def _records_from_split_frame(frame: pd.DataFrame) -> list[dict[str, Any]]:
         subject_id = str(row.subject_id).strip() if not pd.isna(row.subject_id) else ""
         if not subject_id:
             raise OASISLoaderError(f"OASIS split record is missing a subject_id: {image_path}")
+        meta = parse_manifest_meta(getattr(row, "meta", None))
+        # Ensure oasis2_metadata compatibility if fields exist in OASIS-1 manifest
+        if "age" in frame.columns or "age_at_visit" in frame.columns:
+            age = getattr(row, "age", getattr(row, "age_at_visit", 70.0))
+            sex = getattr(row, "sex", "f")
+            mmse = getattr(row, "mmse", 27.0)
+            meta["oasis2_metadata"] = {
+                "age_at_visit": age,
+                "sex": sex,
+                "mmse": mmse
+            }
+
         records.append(
             {
                 "image": str(image_path),
@@ -464,6 +476,7 @@ def _records_from_split_frame(frame: pd.DataFrame) -> list[dict[str, Any]]:
                 "is_longitudinal_subject": bool(getattr(row, "is_longitudinal_subject", False)),
                 "longitudinal_group_id": str(getattr(row, "longitudinal_group_id", f"subject::{subject_id}")),
                 "scan_timestamp": "" if pd.isna(getattr(row, "scan_timestamp", None)) else str(row.scan_timestamp),
+                "meta": meta,
             }
         )
     return records

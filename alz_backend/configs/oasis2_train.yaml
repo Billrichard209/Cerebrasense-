@@ -4,6 +4,10 @@ device: auto
 mixed_precision: true
 deterministic: true
 dry_run: false
+
+model:
+  architecture: densenet121_multimodal
+
 model_config_path:
 
 data:

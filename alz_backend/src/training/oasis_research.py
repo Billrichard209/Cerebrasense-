@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -100,6 +100,14 @@ class CheckpointConfig:
 
 
 @dataclass(slots=True, frozen=True)
+class ResearchModelConfig:
+    """Optional inline model overrides for research training."""
+
+    architecture: str | None = None
+    expected_input_shape: tuple[int, int, int, int, int] | None = None
+
+
+@dataclass(slots=True, frozen=True)
 class ResearchOASISTrainingConfig:
     """Top-level config for the research-grade OASIS training runner."""
 
@@ -116,6 +124,7 @@ class ResearchOASISTrainingConfig:
     loss: LossConfig = field(default_factory=LossConfig)
     early_stopping: EarlyStoppingConfig = field(default_factory=EarlyStoppingConfig)
     checkpoint: CheckpointConfig = field(default_factory=CheckpointConfig)
+    model: ResearchModelConfig = field(default_factory=ResearchModelConfig)
 
 
 @dataclass(slots=True)
@@ -205,6 +214,13 @@ def _merge_training_config(default_config: ResearchOASISTrainingConfig, override
     checkpoint_section.update(overrides.get("checkpoint", {}))
     checkpoint_section["resume_from"] = _optional_path(checkpoint_section.get("resume_from"))
 
+    model_section = dict(asdict(default_config.model))
+    model_section.update(overrides.get("model", {}))
+    if model_section.get("expected_input_shape") is not None:
+        model_section["expected_input_shape"] = _as_tuple(
+            model_section["expected_input_shape"], cast_type=int, expected_length=5
+        )
+
     return ResearchOASISTrainingConfig(
         run_name=str(overrides.get("run_name", default_config.run_name)),
         epochs=int(overrides.get("epochs", default_config.epochs)),
@@ -219,6 +235,7 @@ def _merge_training_config(default_config: ResearchOASISTrainingConfig, override
         loss=LossConfig(**loss_section),
         early_stopping=EarlyStoppingConfig(**early_stopping_section),
         checkpoint=CheckpointConfig(**checkpoint_section),
+        model=ResearchModelConfig(**model_section),
     )
 
 
@@ -425,7 +442,13 @@ def _run_epoch(
             labels = _coerce_labels(batch["label"], torch, device)
 
             with _autocast_context(torch, device=device, amp_enabled=amp_enabled):
-                logits = model(inputs)
+                # Multimodal Dispatch
+                clinical = batch.get("clinical")
+                if clinical is not None and hasattr(model, "tabular_mlp"):
+                    logits = model(inputs, clinical.to(device))
+                else:
+                    logits = model(inputs)
+                    
                 primary_loss = loss_function(logits, labels)
                 
                 loss = primary_loss
@@ -719,6 +742,10 @@ def run_research_oasis_training(
     set_global_seed(cfg.data.seed, deterministic=cfg.deterministic)
     paths = build_run_paths(resolved_settings, cfg.run_name)
     model_cfg = load_oasis_model_config(cfg.model_config_path)
+    if cfg.model.architecture:
+        model_cfg = replace(model_cfg, architecture=cfg.model.architecture)
+    if cfg.model.expected_input_shape:
+        model_cfg = replace(model_cfg, expected_input_shape=cfg.model.expected_input_shape)
     _save_resolved_config(cfg=cfg, model_cfg=model_cfg, paths=paths)
 
     torch = _load_torch_symbols()["torch"]

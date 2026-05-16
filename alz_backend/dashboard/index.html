@@ -235,10 +235,19 @@
             <div class="sidebar-header">
                 <h1>CerebraSense</h1>
                 <p>Longitudinal MRI Intelligence</p>
-                <div style="margin-top: 16px;">
+                <div style="margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--border);">
+                    <p style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Multimodal Inputs</p>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <input type="number" id="inpAge" placeholder="Age" style="width: 60px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 4px; color: white; padding: 4px 8px; font-size: 12px;">
+                        <select id="inpSex" style="flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 4px; color: white; padding: 4px; font-size: 12px;">
+                            <option value="f" style="color: black;">Female</option>
+                            <option value="m" style="color: black;">Male</option>
+                        </select>
+                        <input type="number" id="inpMMSE" placeholder="MMSE" style="width: 60px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 4px; color: white; padding: 4px 8px; font-size: 12px;">
+                    </div>
                     <input type="file" id="scanUpload" style="display: none;" onchange="handleUpload(event)">
                     <button onclick="document.getElementById('scanUpload').click()" style="width: 100%; padding: 10px; background: var(--primary); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <span>+</span> Upload New Scan
+                        <span>+</span> Analyze MRI
                     </button>
                 </div>
             </div>
@@ -316,6 +325,9 @@
                 <div id="resultIcon" style="font-size: 48px; margin-bottom: 20px;"></div>
                 <h2 id="resultLabel">--</h2>
                 <div id="resultProb" style="font-size: 32px; font-weight: 700; margin: 16px 0;">--%</div>
+                
+                <img id="resultCam" style="display: none; width: 220px; height: 220px; object-fit: cover; border-radius: 12px; margin: 0 auto 20px auto; border: 1px solid var(--border); background: #000;">
+                
                 <p id="resultSummary" style="color: var(--text-muted); line-height: 1.5; margin-bottom: 24px;">--</p>
                 <button onclick="closeModal()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: white; cursor: pointer;">Close Assessment</button>
             </div>
@@ -486,6 +498,9 @@
 
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('age', document.getElementById('inpAge').value || '70');
+            formData.append('sex', document.getElementById('inpSex').value);
+            formData.append('mmse', document.getElementById('inpMMSE').value || '27');
 
             try {
                 const response = await fetch('/api/predict', {
@@ -501,8 +516,22 @@
 
                 const prob = Math.round(data.probability_score * 100);
                 document.getElementById('resultLabel').innerText = data.label_name;
-                document.getElementById('resultProb').innerText = `${prob}% Risk`;
+                
+                let probText = `${prob}% Risk`;
+                if (data.mcd_uncertainty && data.mcd_uncertainty.length > 1) {
+                    const margin = Math.round(data.mcd_uncertainty[1] * 100);
+                    probText += ` ± ${margin}%`;
+                }
+                document.getElementById('resultProb').innerText = probText;
                 document.getElementById('resultSummary').innerText = data.ai_summary;
+                
+                const camImg = document.getElementById('resultCam');
+                if (data.gradcam_base64) {
+                    camImg.src = "data:image/png;base64," + data.gradcam_base64;
+                    camImg.style.display = "block";
+                } else {
+                    camImg.style.display = "none";
+                }
                 
                 const icon = document.getElementById('resultIcon');
                 if (prob > 65) {

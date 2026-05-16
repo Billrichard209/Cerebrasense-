@@ -6,6 +6,9 @@ deterministic: true
 dry_run: false
 dropout_prob: 0.0
 
+model:
+  architecture: densenet121_multimodal
+
 data:
   batch_size: 8
   gradient_accumulation_steps: 1

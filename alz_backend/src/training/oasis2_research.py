@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -259,6 +259,10 @@ def run_research_oasis2_training(
 
     print("oasis2_trainer: loading model config", flush=True)
     model_cfg = load_oasis_model_config(cfg.model_config_path)
+    if cfg.model.architecture:
+        model_cfg = replace(model_cfg, architecture=cfg.model.architecture)
+    if cfg.model.expected_input_shape:
+        model_cfg = replace(model_cfg, expected_input_shape=cfg.model.expected_input_shape)
 
     print("oasis2_trainer: importing torch symbols", flush=True)
     torch = _load_torch_symbols()["torch"]

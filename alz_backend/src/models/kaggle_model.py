@@ -15,6 +15,7 @@ class KaggleMonaiModelConfig:
     in_channels: int = 1
     out_channels: int = 4
     dropout_prob: float = 0.0
+    architecture: str = "densenet121_3d"
 
     @property
     def spatial_dims(self) -> int:
@@ -47,6 +48,15 @@ def build_kaggle_monai_network(config: KaggleMonaiModelConfig | None = None) -> 
     """Build the default MONAI network for Kaggle classification experiments."""
 
     resolved_config = config or KaggleMonaiModelConfig()
+
+    if resolved_config.architecture == "densenet121_multimodal":
+        from .multimodal import OASISMultimodalDenseNet
+        return OASISMultimodalDenseNet(
+            in_channels=resolved_config.in_channels,
+            out_channels=resolved_config.out_channels,
+            dropout_prob=resolved_config.dropout_prob,
+        )
+
     return build_monai_densenet121(
         MonaiClassificationModelConfig(
             spatial_dims=resolved_config.spatial_dims,

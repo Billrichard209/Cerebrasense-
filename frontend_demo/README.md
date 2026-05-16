@@ -6,7 +6,8 @@ A polished single-page frontend prototype for demonstrating a modern UI directio
 
 ### Easiest option on Windows
 
-Double-click `run_frontend_demo_localhost.cmd` from the project root.
+Double-click `run_frontend_demo_localhost.cmd` 
+
 
 That launcher will:
 

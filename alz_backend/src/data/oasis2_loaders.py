@@ -256,6 +256,7 @@ def build_oasis2_datasets(cfg: OASIS2LoaderConfig) -> OASIS2DatasetBundle:
                 "subject_id": r["subject_id"],
                 "session_id": r["session_id"],
                 "split_group_key": r["split_group_key"],
+                "meta": r["meta"],
             }
             for r in records
         ]

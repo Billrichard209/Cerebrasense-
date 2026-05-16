@@ -30,7 +30,7 @@ _load_monai_network_symbols = load_monai_network_symbols
 _load_torch_symbols = load_torch_symbols
 
 OASIS_BINARY_CLASS_NAMES = ("nondemented", "demented")
-SUPPORTED_MODEL_ARCHITECTURES = ("densenet121_3d",)
+SUPPORTED_MODEL_ARCHITECTURES = ("densenet121_3d", "densenet121_multimodal")
 
 
 class ModelFactoryError(ValueError):
@@ -231,6 +231,14 @@ def build_model(cfg: OASISModelConfig | None = None) -> object:
 
     if resolved_cfg.architecture == "densenet121_3d":
         model = build_densenet3d(resolved_cfg)
+    elif resolved_cfg.architecture == "densenet121_multimodal":
+        from src.models.multimodal import OASISMultimodalDenseNet
+        model = OASISMultimodalDenseNet(
+            spatial_dims=resolved_cfg.densenet.spatial_dims,
+            in_channels=resolved_cfg.densenet.in_channels,
+            out_channels=resolved_cfg.densenet.out_channels,
+            dropout_prob=resolved_cfg.densenet.dropout_prob,
+        )
     else:
         raise ModelFactoryError(f"Unsupported OASIS model architecture: {resolved_cfg.architecture}")
 

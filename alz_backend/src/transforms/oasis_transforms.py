@@ -26,7 +26,29 @@ import yaml
 from src.utils.io_utils import resolve_project_root
 from src.utils.monai_utils import load_monai_transform_symbols
 
+from src.utils.monai_utils import load_monai_transform_symbols
+
 _load_monai_transform_symbols = load_monai_transform_symbols
+
+class ExtractClinicalFeaturesd:
+    """Extract clinical features (Age, Sex, MMSE) from the meta dictionary into a tensor."""
+    def __init__(self, keys=("meta",), output_key="clinical"):
+        self.keys = keys
+        self.output_key = output_key
+
+    def __call__(self, data: dict[str, Any]) -> dict[str, Any]:
+        d = dict(data)
+        meta = d.get(self.keys[0], {})
+        oasis_meta = meta.get("oasis2_metadata", {})
+        
+        age = float(oasis_meta.get("age_at_visit") or 70.0) / 100.0
+        sex_str = str(oasis_meta.get("sex")).lower()
+        sex = 1.0 if sex_str == "m" else 0.0
+        mmse = float(oasis_meta.get("mmse") or 25.0) / 30.0
+        
+        import torch
+        d[self.output_key] = torch.tensor([age, sex, mmse], dtype=torch.float32)
+        return d
 
 
 @dataclass(slots=True, frozen=True)
@@ -323,6 +345,7 @@ def _build_common_oasis_steps(cfg: OASISTransformConfig) -> list[tuple[str, obje
         )
     )
     steps.append(("ensure_typed", symbols["EnsureTyped"](keys=list(cfg.load.keys))))
+    steps.append(("extract_clinical", ExtractClinicalFeaturesd()))
     return steps
 
 

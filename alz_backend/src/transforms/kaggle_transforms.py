@@ -22,6 +22,7 @@ from src.utils.io_utils import resolve_project_root
 from src.utils.monai_utils import load_monai_transform_symbols
 
 _load_monai_transform_symbols = load_monai_transform_symbols
+from src.transforms.oasis_transforms import ExtractClinicalFeaturesd
 
 
 @dataclass(slots=True, frozen=True)
@@ -365,6 +366,7 @@ def _build_common_kaggle_steps(cfg: KaggleTransformConfig, *, dataset_type: str)
         )
     )
     steps.append(("ensure_typed", symbols["EnsureTyped"](keys=keys)))
+    steps.append(("extract_clinical", ExtractClinicalFeaturesd()))
     return steps
 
 
