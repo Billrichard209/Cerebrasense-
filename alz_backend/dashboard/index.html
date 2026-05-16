@@ -117,7 +117,11 @@
             padding: 40px;
             overflow-y: auto;
             position: relative;
+            height: 100vh;
         }
+
+        .main::-webkit-scrollbar { width: 6px; }
+        .main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
 
         .header-stats {
             display: grid;
@@ -250,6 +254,16 @@
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        @media print {
+            .sidebar, .btn-primary, .header-stats, .clinical-card:last-child { display: none !important; }
+            .app-layout { display: block; }
+            .main { padding: 0; background: white !important; color: black !important; height: auto; overflow: visible; }
+            .viz-panel, .clinical-card { background: white !important; border: 1px solid #eee !important; color: black !important; break-inside: avoid; }
+            canvas { max-width: 100% !important; height: auto !important; }
+            h2, h4, p, span { color: black !important; }
+            body { background: white !important; overflow: visible; height: auto; }
+        }
+
         #resultCam {
             width: 100%;
             height: 300px;
@@ -313,7 +327,12 @@
                             <h2 id="activePatientId" style="font-size: 24px; font-weight: 700;">--</h2>
                             <p id="trendStatus" style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">--</p>
                         </div>
-                        <div id="activeBadges"></div>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <div id="activeBadges"></div>
+                            <button onclick="window.print()" class="btn-primary" style="background: rgba(255,255,255,0.05); box-shadow: none; padding: 10px 16px; font-size: 13px;">
+                                📥 Export Report
+                            </button>
+                        </div>
                     </div>
                     <div style="height: 450px;">
                         <canvas id="riskChart"></canvas>
