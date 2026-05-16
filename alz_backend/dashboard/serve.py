@@ -1,65 +1,34 @@
-"""
-CerebraSense Clinical Dashboard Server
-Serves the dashboard HTML and exposes a JSON API from the predictions CSV.
-Usage: python dashboard/serve.py
-"""
 import json
 import os
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
+import pandas as pd
+import numpy as np
+import cgi
 
 # Add project root to sys.path
-import sys
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-import pandas as pd
-import numpy as np
-import cgi
-from src.inference.pipeline import predict_scan, PredictScanOptions
+from src.inference.pipeline import predict_scan, PredictScanOptions, compute_longitudinal_metrics
 from src.configs.runtime import get_app_settings
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent.parent
 DASHBOARD_DIR = Path(__file__).parent
 
-# Try to find the best available predictions CSV (OASIS-2 preferred)
-CANDIDATE_CSVS = [
-    ROOT / "outputs/runs/oasis2/oasis2_colab_improved_v1/evaluation/post_train_test_best_model/predictions.csv",
-    ROOT / "outputs/runs/oasis2/oasis2_bias_stability_v1/evaluation/post_train_val_best_model/predictions.csv",
-    ROOT / "outputs/runs/oasis2/oasis2_bias_stability_v1/evaluation/post_train_test_best_model/predictions.csv",
-]
-
-AUDIT_JSON = ROOT / "outputs/reports/longitudinal/audit_consistent_final.json"
-
-
 def find_predictions_csv():
+    CANDIDATE_CSVS = [
+        ROOT / "outputs/runs/oasis2/oasis2_colab_improved_v1/evaluation/post_train_test_best_model/predictions.csv",
+        ROOT / "outputs/runs/oasis2/oasis2_bias_stability_v1/evaluation/post_train_val_best_model/predictions.csv",
+    ]
     for p in CANDIDATE_CSVS:
         if p.exists():
             return p
     return None
-
-
-def ema_smooth(scores: list, alpha: float = 0.4) -> list:
-    smoothed = []
-    current = scores[0]
-    for s in scores:
-        current = alpha * s + (1 - alpha) * current
-        smoothed.append(round(current, 4))
-    return smoothed
-
-
-def detect_paradoxes(scores: list, epsilon: float = 0.05) -> list:
-    """Return indices where a significant drop occurred."""
-    paradox_indices = []
-    for i in range(1, len(scores)):
-        if scores[i] < scores[i - 1] - epsilon:
-            paradox_indices.append(i)
-    return paradox_indices
-
 
 def load_data():
     # Define primary and secondary comparison runs
@@ -88,8 +57,9 @@ def load_data():
     for subj_id, group in longitudinal.groupby("meta_subject_id"):
         group = group.sort_values("meta_session_id").reset_index(drop=True)
         raw_scores = group["probability_class_1"].tolist()
-        smoothed = ema_smooth(raw_scores)
-        paradox_idx = detect_paradoxes(smoothed)
+        
+        # Use our new core longitudinal engine
+        trends = compute_longitudinal_metrics(raw_scores)
         
         # Try to get baseline scores for comparison
         comparison_scores = []
@@ -99,19 +69,38 @@ def load_data():
             if not b_subj.empty:
                 comparison_scores = [round(s, 4) for s in b_subj["probability_class_1"].tolist()]
 
-        final_risk = smoothed[-1]
+        final_risk = trends["smoothed_scores"][-1]
+        
+        # Multimodal metadata extraction (best effort from CSV meta)
+        age = "70"
+        sex = "Female"
+        mmse = "27"
+        if "meta" in group.columns:
+            try:
+                m = json.loads(group["meta"].iloc[-1].replace("'", "\""))
+                om = m.get("oasis2_metadata", {})
+                age = str(om.get("age_at_visit", "70"))
+                sex = "Male" if str(om.get("sex")).lower() == "m" else "Female"
+                mmse = str(om.get("mmse", "27"))
+            except: pass
+
         subjects.append({
             "subject_id": subj_id,
             "visits": group["meta_session_id"].tolist(),
             "raw_scores": [round(s, 4) for s in raw_scores],
-            "smoothed_scores": smoothed,
+            "smoothed_scores": trends["smoothed_scores"],
             "comparison_scores": comparison_scores,
-            "paradox_indices": paradox_idx,
-            "true_label": group["true_label_name"].iloc[-1],
+            "velocity": trends["velocity"],
+            "trend_status": trends["trend_status"],
+            "is_rapid_decline": trends["is_rapid_decline"],
             "final_risk": round(final_risk, 4),
             "status": "High Risk" if final_risk >= 0.65 else "Low Risk",
-            "clinical_flag": "Paradox Detected" if paradox_idx else "Stable Trend",
             "num_visits": len(raw_scores),
+            "clinical": {
+                "age": age,
+                "sex": sex,
+                "mmse": mmse
+            }
         })
 
     subjects.sort(key=lambda x: x["final_risk"], reverse=True)
@@ -120,6 +109,8 @@ def load_data():
         "subjects": subjects,
         "summary": {
             "total_subjects": len(subjects),
+            "high_risk_count": len([s for s in subjects if s["status"] == "High Risk"]),
+            "rapid_decline_count": len([s for s in subjects if s["is_rapid_decline"]]),
             "runs_loaded": list(run_data.keys()),
         }
     }, None
@@ -156,6 +147,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self.send_file(html_file, "text/html; charset=utf-8")
             else:
                 self.send_json({"error": "index.html not found"}, 404)
+
+        elif path == "/logo.svg":
+            logo_file = DASHBOARD_DIR / "logo.svg"
+            if logo_file.exists():
+                self.send_file(logo_file, "image/svg+xml")
+            else:
+                self.send_json({"error": "logo.svg not found"}, 404)
 
         elif path == "/api/data":
             data, err = load_data()

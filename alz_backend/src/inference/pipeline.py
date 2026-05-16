@@ -53,7 +53,7 @@ from src.storage import (
 )
 from src.transforms.oasis_transforms import build_oasis_infer_transforms, load_oasis_transform_config
 from src.transforms.oasis_transforms import OASISSpatialConfig, OASISTransformConfig
-from src.utils.io_utils import ensure_directory
+from src.utils.io_utils import ensure_directory, log_structured_event
 from src.utils.monai_utils import load_monai_inferer_symbols, load_torch_symbols
 
 _load_monai_inferer_symbols = load_monai_inferer_symbols
@@ -233,6 +233,40 @@ def _build_output_root(settings: AppSettings, output_name: str) -> Path:
 
     safe_name = output_name.replace(" ", "_").replace("/", "_").replace("\\", "_")
     return ensure_directory(settings.outputs_root / "predictions" / safe_name)
+
+def compute_longitudinal_metrics(scores: list[float], alpha: float = 0.4) -> dict[str, Any]:
+    """Calculate EMA-smoothed trends, velocity (delta), and acceleration of risk."""
+    if not scores:
+        return {}
+    
+    # EMA Smoothing
+    smoothed = []
+    current = scores[0]
+    for s in scores:
+        current = alpha * s + (1 - alpha) * current
+        smoothed.append(round(current, 4))
+    
+    velocity = [round(smoothed[i] - smoothed[i-1], 4) for i in range(1, len(smoothed))]
+    acceleration = [round(velocity[i] - velocity[i-1], 4) for i in range(1, len(velocity))]
+    
+    current_velocity = velocity[-1] if velocity else 0.0
+    current_accel = acceleration[-1] if acceleration else 0.0
+    
+    status = "Stable"
+    if current_velocity > 0.05:
+        status = "Escalating" if current_accel >= 0 else "Stabilizing"
+    elif current_velocity < -0.05:
+        status = "Improving"
+        
+    return {
+        "smoothed_scores": smoothed,
+        "velocity": velocity,
+        "acceleration": acceleration,
+        "current_velocity": current_velocity,
+        "current_acceleration": current_accel,
+        "trend_status": status,
+        "is_rapid_decline": current_velocity > 0.1 and current_accel > 0
+    }
 
 
 def _ai_summary(*, label_name: str, probability_score: float, confidence_score: float) -> str:
@@ -437,6 +471,7 @@ def predict_scan(
             for index, probability in enumerate(probabilities)
         },
         "uncertainty": uncertainty,
+        "longitudinal_trends": compute_longitudinal_metrics([probability_score]), # Initial visit
         "decision_support_only": True,
         "clinical_disclaimer": STANDARD_DECISION_SUPPORT_DISCLAIMER,
         "abnormal_regions": [],
@@ -541,5 +576,15 @@ def predict_scan(
             "checkpoint_name": resolved_checkpoint_path.name,
             "trace_id": trace_id,
         },
+    )
+    log_structured_event(
+        "predict_scan",
+        {
+            "prediction_id": prediction_id,
+            "subject_id": resolved_options.subject_id,
+            "probability": probability_score,
+            "label": label_name,
+            "model": model_config.architecture
+        }
     )
     return payload

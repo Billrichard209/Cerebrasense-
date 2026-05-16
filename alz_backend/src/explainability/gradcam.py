@@ -69,6 +69,10 @@ class ExplainScanConfig:
     save_saliency: bool = True
     true_label: int | None = None
     confidence_config: ConfidenceBandConfig | None = None
+    # Multimodal clinical inputs
+    age: float | None = None
+    sex: str | None = None
+    mmse: float | None = None
 
 
 @dataclass(slots=True)
@@ -209,7 +213,21 @@ def _compute_gradcam(
         batch = image.unsqueeze(0).to(device)
         batch.requires_grad_(True)
         model.zero_grad(set_to_none=True)
-        logits = model(batch)
+        
+        # Handle Multimodal dispatch
+        if hasattr(model, "tabular_mlp"):
+            # Construct clinical tensor from inputs or defaults
+            # Expecting (Age/100, Sex_Binary, MMSE/30)
+            age_norm = float(getattr(image, "age", 70.0)) / 100.0
+            sex_str = str(getattr(image, "sex", "f")).lower()
+            sex_bin = 1.0 if sex_str == "m" else 0.0
+            mmse_norm = float(getattr(image, "mmse", 27.0)) / 30.0
+            
+            clinical = torch.tensor([[age_norm, sex_bin, mmse_norm]], dtype=torch.float32).to(device)
+            logits = model(batch, clinical)
+        else:
+            logits = model(batch)
+            
         probabilities = torch.softmax(logits, dim=1)[0]
         selected_class = int(target_class) if target_class is not None else int(torch.argmax(probabilities).item())
         score = logits[0, selected_class]
@@ -380,6 +398,11 @@ def explain_scan(
     transform_config = _load_transform_config(cfg, image_size_override=registry_image_size)
     sample = build_oasis_infer_transforms(transform_config)({"image": str(scan_path)})
     image = sample["image"]
+    
+    # Attach clinical metadata for multimodal dispatch in _compute_gradcam
+    setattr(image, "age", cfg.age if cfg.age is not None else 70.0)
+    setattr(image, "sex", cfg.sex if cfg.sex is not None else "f")
+    setattr(image, "mmse", cfg.mmse if cfg.mmse is not None else 27.0)
 
     model_cfg = load_oasis_model_config(cfg.model_config_path)
     class_names = tuple(model_cfg.class_names) if model_cfg.class_names else OASIS_BINARY_CLASS_NAMES
