@@ -52,8 +52,11 @@ class ExtractClinicalFeaturesd:
         sex = 1.0 if sex_str == "m" else 0.0
         mmse = float(oasis_meta.get("mmse") or 27.0) / 30.0
         
+        # New: Genetic Risk (APOE-ε4 status: 0, 1, or 2 copies)
+        apoe = float(oasis_meta.get("apoe") or 0.0) / 2.0
+        
         import torch
-        d[self.output_key] = torch.tensor([age, sex, mmse], dtype=torch.float32)
+        d[self.output_key] = torch.tensor([age, sex, mmse, apoe], dtype=torch.float32)
         
         # IMPORTANT: Remove the variable-length meta dictionary to avoid KeyError 
         # during batch collation when batch_size > 1.

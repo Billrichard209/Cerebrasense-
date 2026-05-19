@@ -34,6 +34,12 @@ class ClinicalScribe:
         
         narrative = f"Patient {patient_id} ({age}Y, MMSE: {mmse}) {status_map.get(label, 'requires further observation')}. "
         
+        # 1b. Genetic Insight (Fusion 3.0)
+        apoe = clinical_meta.get("apoe", 0)
+        if apoe > 0:
+            gen_note = f"The presence of {int(apoe)} APOE-ε4 allele(s) indicates a baseline genetic predisposition which elevates the significance of the observed MRI markers."
+            narrative += f"{gen_note} "
+
         # 2. Volumetric Insight
         hippo_vol = biomarkers.get("hippo_vol_mm3", 0)
         norm_ratio = biomarkers.get("normalized_ratio", 0) * 100
@@ -55,7 +61,15 @@ class ClinicalScribe:
             
         narrative += f"{trend_note} "
         
-        # 4. Final Clinical Suggestion
+        # 4. Generative Prognosis Simulation (Experimental)
+        prog_velocity = velocity if velocity > 0 else 0.02
+        future_risk = min(0.99, risk_score + (prog_velocity * 24)) # 24 month projection
+        narrative += f"\n\nPROGNOSTIC SIMULATION (24-Month Horizon):\n"
+        narrative += f"Based on current biomarkers and genetic profile, the predicted risk index in 24 months is {round(future_risk * 100, 1)}%. "
+        if future_risk > 0.7:
+            narrative += "Simulation suggests a high probability of conversion to advanced clinical stages if neuroprotective interventions are not initiated."
+
+        # 5. Final Clinical Suggestion
         if risk_score > 0.7:
             suggestion = "Conclusion: High clinical suspicion for AD. Recommend immediate specialist consultation and potential PET-amyloid imaging to correlate with these structural findings."
         elif risk_score > 0.4:

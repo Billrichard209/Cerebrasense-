@@ -16,7 +16,7 @@ class OASISMultimodalDenseNet(nn.Module):
         in_channels: int = 1,
         out_channels: int = 2,
         dropout_prob: float = 0.2,
-        tabular_features: int = 3,
+        tabular_features: int = 4,
         hidden_dim: int = 128,
     ):
         super().__init__()
@@ -78,7 +78,7 @@ class OASISCrossAttentionTransformer(nn.Module):
         in_channels: int = 1,
         out_channels: int = 2,
         dropout_prob: float = 0.2,
-        tabular_features: int = 3,
+        tabular_features: int = 4,
         num_heads: int = 8,
         num_layers: int = 2,
     ):

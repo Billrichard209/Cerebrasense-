@@ -33,6 +33,7 @@ class ClinicalInput(BaseModel):
     age: float = Field(..., ge=0, le=120, description="Patient age in years (0-120)")
     sex: str = Field(..., pattern="^(m|f|male|female)$", description="Patient biological sex (m/f)")
     mmse: float = Field(..., ge=0, le=30, description="MMSE score (0-30)")
+    apoe: int = Field(0, ge=0, le=2, description="APOE-ε4 status (0, 1, or 2 copies)")
 
 # --- API Configuration ---
 
@@ -77,6 +78,7 @@ async def analyze_mri(
     age: float = Form(...),
     sex: str = Form(...),
     mmse: float = Form(...),
+    apoe: int = Form(0),
 ):
     """
     Multimodal Inference Endpoint.
@@ -84,7 +86,7 @@ async def analyze_mri(
     """
     # 1. Validation Guardrails (via Pydantic)
     try:
-        clinical = ClinicalInput(age=age, sex=sex, mmse=mmse)
+        clinical = ClinicalInput(age=age, sex=sex, mmse=mmse, apoe=apoe)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Clinical Validation Error: {str(e)}")
 
@@ -108,6 +110,7 @@ async def analyze_mri(
             age=clinical.age,
             sex=clinical.sex,
             mmse=clinical.mmse,
+            apoe=clinical.apoe,
             save_debug_slices=True
         )
         
@@ -145,7 +148,7 @@ async def analyze_mri(
             label=result["label_name"],
             velocity=result.get("velocity", 0.0),
             biomarkers=result["biomarkers"],
-            clinical_meta={"age": clinical.age, "mmse": clinical.mmse}
+            clinical_meta={"age": clinical.age, "mmse": clinical.mmse, "apoe": clinical.apoe}
         )
         result["clinical_summary"] = summary
         
@@ -158,6 +161,23 @@ async def analyze_mri(
         if temp_path.exists():
             os.remove(temp_path)
 
+@app.get("/api/mri/{session_id}/{filename}")
+async def get_mri_file(session_id: str, filename: str):
+    """Serve raw MRI volumes (NIfTI format) for WebGL 3D rendering."""
+    settings = get_app_settings()
+    exports_dir = settings.project_root / "outputs" / "exports" / "oasis2_upload_bundle_ready"
+    
+    # Locate the RAW folder for the session_id across any partition
+    matching_dirs = list(exports_dir.glob(f"*/{session_id}/RAW"))
+    if not matching_dirs:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found in exports.")
+        
+    file_path = matching_dirs[0] / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"File {filename} not found in session raw directory.")
+        
+    return FileResponse(file_path)
+
 @app.get("/logo.svg")
 async def get_logo():
     """Serve the platform branding."""
@@ -165,6 +185,25 @@ async def get_logo():
     if logo_path.exists():
         return FileResponse(logo_path, media_type="image/svg+xml")
     raise HTTPException(status_code=404)
+
+@app.get("/api/mri/{session_id}/{filename}")
+async def get_mri_file(session_id: str, filename: str):
+    """
+    Serve raw patient MRI volumes (NIfTI format) for WebGL diagnostic rendering.
+    """
+    settings = get_app_settings()
+    exports_dir = settings.project_root / "outputs" / "exports" / "oasis2_upload_bundle_ready"
+    
+    # Locate the RAW folder for the session_id across any partition
+    matching_dirs = list(exports_dir.glob(f"*/{session_id}/RAW"))
+    if not matching_dirs:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found in exports.")
+        
+    file_path = matching_dirs[0] / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"File {filename} not found in session raw directory.")
+        
+    return FileResponse(file_path)
 
 if __name__ == "__main__":
     import uvicorn

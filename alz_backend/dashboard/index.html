@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CerebraSense | Premium Clinical Intelligence</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@niivue/niivue@latest/dist/niivue.umd.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #6366f1;
@@ -23,7 +24,11 @@
 
         * {
             margin: 0; padding: 0; box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Lora', serif;
         }
 
         html, body {
@@ -338,6 +343,9 @@
                         </div>
                         <div style="display: flex; gap: 12px; align-items: center;">
                             <div id="activeBadges"></div>
+                            <button onclick="open3D()" class="btn-primary" style="background: var(--accent); color: #000; font-weight: 700; padding: 10px 16px; font-size: 13px;">
+                                📂 View MRI Scan
+                            </button>
                             <button onclick="window.print()" class="btn-primary" style="background: rgba(255,255,255,0.05); box-shadow: none; padding: 10px 16px; font-size: 13px;">
                                 📥 Export Report
                             </button>
@@ -350,7 +358,7 @@
                     <!-- AI Clinical Narrative Section -->
                     <div class="viz-panel" style="margin-top: 32px; padding: 24px;">
                         <h4 style="font-size: 14px; margin-bottom: 16px; color: var(--accent); letter-spacing: 1px;">AI PHYSICIAN SCRIBE REPORT</h4>
-                        <div id="scribeReport" style="line-height: 1.8; color: var(--text-main); font-size: 15px; white-space: pre-line; border-left: 2px solid var(--primary); padding-left: 20px;">
+                        <div id="scribeReport" style="line-height: 1.8; color: var(--text-main); font-size: 16px; white-space: pre-line; border-left: 2px solid var(--primary); padding-left: 20px; font-family: 'Lora', serif; letter-spacing: 0.2px;">
                             Select a patient to generate report...
                         </div>
                     </div>
@@ -368,6 +376,24 @@
                         <h4>Intelligence Insights</h4>
                         <div id="aiInsight" style="font-size: 14px; line-height: 1.6; color: var(--text-muted);">
                             Select a patient to view longitudinal decline velocity and MRI attribution summaries.
+                        </div>
+                    </div>
+
+                    <div class="clinical-card" style="margin-top: 24px; display: block !important;">
+                        <h4 style="font-size: 14px; margin-bottom: 20px; color: var(--accent); letter-spacing: 0.5px;">BRAIN BIOMARKERS</h4>
+                        <div id="biomarkerList">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                                <span style="color: var(--text-muted);">Hippo. Volume</span>
+                                <span id="valHippo" style="font-weight: 600;">-- mm³</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                                <span style="color: var(--text-muted);">TIV (Est.)</span>
+                                <span id="valTiv" style="font-weight: 600;">-- mm³</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted);">Norm. Ratio</span>
+                                <span id="valRatio" style="color: var(--accent); font-weight: 700;">--</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -396,6 +422,20 @@
         </div>
     </div>
 
+    <!-- Diagnostic MRI Viewer Modal -->
+    <div id="explorer3D" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 90vw; height: 85vh; background: #000; padding: 0; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 20px; right: 20px; z-index: 10;">
+                <button onclick="close3D()" class="btn-primary" style="background: rgba(255,255,255,0.1); width: 40px; height: 40px; padding: 0; border-radius: 50%; font-size: 20px;">×</button>
+            </div>
+            <canvas id="canvas3D" style="width: 100%; height: 100%;"></canvas>
+            <div style="position: absolute; bottom: 20px; left: 20px; color: #fff; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); border: 1px solid var(--border);">
+                <h4 id="explorerTitle" style="font-family: 'Lora', serif; margin-bottom: 4px;">CerebraSense Diagnostic Workstation</h4>
+                <p style="font-size: 12px; color: var(--text-muted);">Scroll on any pane: Slice through scan | Left-click + drag: Crosshair | Right-click + drag: Zoom</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         let dashboardData = null;
         let chart = null;
@@ -403,7 +443,7 @@
         async function init() {
             try {
                 // Point to the new high-quality FastAPI port
-                const response = await fetch('http://localhost:8000/api/data');
+                const response = await fetch('http://localhost:8001/api/data');
                 dashboardData = await response.json();
                 
                 document.getElementById('totalSubjects').innerText = dashboardData.summary.total_subjects;
@@ -594,6 +634,54 @@
         function closeModal() {
             document.getElementById('predictModal').style.display = 'none';
             document.getElementById('scanUpload').value = '';
+        }
+
+        let nv = null;
+        async function open3D() {
+            document.getElementById('explorer3D').style.display = 'flex';
+            
+            if (typeof niivue === 'undefined') {
+                document.getElementById('explorerTitle').innerText = "MRI Scan Viewer | Error: Library Load Failed";
+                console.error("NiiVue library not found. Check internet connection or CDN.");
+                return;
+            }
+
+            const patient = dashboardData.subjects.find(s => s.subject_id === activeId);
+            if (!patient || !patient.visits || patient.visits.length === 0) {
+                document.getElementById('explorerTitle').innerText = "MRI Scan Viewer | Error: No Sessions Found";
+                return;
+            }
+            const latestSessionId = patient.visits[patient.visits.length - 1];
+            document.getElementById('explorerTitle').innerText = `CerebraSense Workstation | Subject ${activeId} (${latestSessionId})`;
+
+            if (!nv) {
+                nv = new niivue.Niivue({
+                    dragMode: niivue.DRAG_MODE.contrast, // Contrast dragging
+                    isColorbar: true,
+                    backColor: [0.05, 0.07, 0.12, 1] // Dark navy clinical palette matching our theme
+                });
+                nv.attachTo('canvas3D');
+                nv.setSliceType(nv.sliceTypeMulti); // Multiplanar mode (Axial, Coronal, Sagittal)
+            }
+            
+            try {
+                const volumeList = [
+                    { 
+                        url: `http://localhost:8001/api/mri/${latestSessionId}/mpr-1.nifti.hdr`, 
+                        colorMap: "gray", 
+                        opacity: 1, 
+                        visible: true 
+                    }
+                ];
+                await nv.loadVolumes(volumeList);
+            } catch (err) {
+                console.warn("Volume load failed, trying fallback...", err);
+                document.getElementById('explorerTitle').innerText = `MRI Scan Viewer | Error: Load Failed (${latestSessionId})`;
+            }
+        }
+
+        function close3D() {
+            document.getElementById('explorer3D').style.display = 'none';
         }
 
         window.onload = init;

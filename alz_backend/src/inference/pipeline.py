@@ -322,7 +322,7 @@ def _review_reason(
 def _is_operational_hold_active(registry_entry: ModelRegistryEntry | None) -> bool:
     """Return whether the active registry entry is currently on governance hold."""
 
-_registry_entry is not None and str(registry_entry.operational_status).lower() == "hold"
+    return registry_entry is not None and str(registry_entry.operational_status).lower() == "hold"
 
 
 def calculate_hippocampal_volume(mri_volume: np.ndarray, voxel_dims: tuple) -> dict:
