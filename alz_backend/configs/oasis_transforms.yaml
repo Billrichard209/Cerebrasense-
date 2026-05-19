@@ -50,3 +50,6 @@ augmentation:
   gibbs_alpha: [0.0, 0.3]
   contrast_probability: 0.3
   contrast_gamma: [0.8, 1.2]
+  elastic_probability: 0.3
+  elastic_sigma_range: [5.0, 7.0]
+  elastic_magnitude_range: [50.0, 100.0]

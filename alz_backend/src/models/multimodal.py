@@ -65,6 +65,62 @@ class OASISMultimodalDenseNet(nn.Module):
         return logits
 
 
+class OASISMultimodalResNet(nn.Module):
+    """
+    Fuses a PRE-TRAINED 3D ResNet50 (Kinetics-400) MRI features with clinical tabular data.
+    Transfer learning significantly boosts clinical generalization on small datasets.
+    """
+
+    def __init__(
+        self,
+        spatial_dims: int = 3,
+        in_channels: int = 1,
+        out_channels: int = 2,
+        dropout_prob: float = 0.2,
+        tabular_features: int = 4,
+        hidden_dim: int = 128,
+    ):
+        super().__init__()
+        
+        # Load pre-trained ResNet50
+        resnet_cls = load_monai_network_symbols()["resnet50"]
+        # Note: pretrained=True downloads Kinetics weights. n_input_channels handles our 1-channel MRI.
+        self.resnet = resnet_cls(
+            spatial_dims=spatial_dims,
+            n_input_channels=in_channels,
+            num_classes=out_channels, # We'll replace the final layer anyway
+            pretrained=True
+        )
+        
+        # In MONAI's ResNet, the final layer is 'fc'
+        self.cnn_feature_dim = self.resnet.fc.in_features
+        self.resnet.fc = nn.Identity()
+        
+        # Process tabular data (e.g. Age, Sex, MMSE)
+        self.tabular_mlp = nn.Sequential(
+            nn.Linear(tabular_features, 64),
+            nn.ReLU(),
+            nn.Dropout(dropout_prob),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+        )
+        
+        # Fuse CNN and Tabular features
+        self.fusion_mlp = nn.Sequential(
+            nn.Linear(self.cnn_feature_dim + 32, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout_prob),
+            nn.Linear(hidden_dim, out_channels),
+        )
+
+    def forward(self, img: torch.Tensor, tabular: torch.Tensor) -> torch.Tensor:
+        cnn_features = self.resnet(img)
+        tab_features = self.tabular_mlp(tabular)
+        fused = torch.cat((cnn_features, tab_features), dim=1)
+        logits = self.fusion_mlp(fused)
+        return logits
+
+
 class OASISCrossAttentionTransformer(nn.Module):
     """
     Advanced 'Master Architect' architecture.

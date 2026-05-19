@@ -146,6 +146,9 @@ class OASISAugmentationConfig:
     gibbs_alpha: tuple[float, float] = (0.0, 0.3)
     contrast_probability: float = 0.0
     contrast_gamma: tuple[float, float] = (0.8, 1.2)
+    elastic_probability: float = 0.0
+    elastic_sigma_range: tuple[float, float] = (5.0, 7.0)
+    elastic_magnitude_range: tuple[float, float] = (50.0, 100.0)
 
 
 @dataclass(slots=True, frozen=True)
@@ -223,7 +226,7 @@ def _merge_dataclass_config(default_config: OASISTransformConfig, overrides: dic
             cast_type=float,
             expected_length=3,
         )
-    for key in ("bias_field_coeff_range", "gibbs_alpha", "contrast_gamma"):
+    for key in ("bias_field_coeff_range", "gibbs_alpha", "contrast_gamma", "elastic_sigma_range", "elastic_magnitude_range"):
         if key in augmentation_section:
             augmentation_section[key] = _as_tuple(
                 augmentation_section[key],
@@ -428,6 +431,20 @@ def _build_train_aug_steps(cfg: OASISTransformConfig) -> list[tuple[str, object]
                 ),
             )
         )
+    if cfg.augmentation.elastic_probability > 0:
+        steps.append(
+            (
+                "elastic_augmentation",
+                symbols["Rand3DElasticd"](
+                    keys=list(cfg.load.keys),
+                    prob=cfg.augmentation.elastic_probability,
+                    sigma_range=cfg.augmentation.elastic_sigma_range,
+                    magnitude_range=cfg.augmentation.elastic_magnitude_range,
+                    padding_mode="border",
+                    mode="bilinear",
+                ),
+            )
+        )
     return steps
 
 
@@ -453,6 +470,7 @@ def describe_oasis_transform_pipeline(
         "bias_field_augmentation": "Simulate MRI scanner field inhomogeneity during training.",
         "gibbs_noise_augmentation": "Simulate MRI ringing artifacts during training.",
         "contrast_augmentation": "Vary T1 contrast response to improve scanner robustness.",
+        "elastic_augmentation": "Apply random non-linear elastic deformations to simulate varied brain atrophy patterns.",
         "ensure_typed": "Convert outputs to MONAI/Torch tensor-compatible types.",
     }
     common_steps = [name for name, _ in _build_common_oasis_steps(resolved_cfg)]
