@@ -28,6 +28,7 @@ def load_monai_transform_symbols() -> dict[str, Any]:
         Resized,
         ScaleIntensityRangePercentilesd,
         Spacingd,
+        Rand3DElasticd,
     )
 
     return {
@@ -50,6 +51,7 @@ def load_monai_transform_symbols() -> dict[str, Any]:
         "Resized": Resized,
         "ScaleIntensityRangePercentilesd": ScaleIntensityRangePercentilesd,
         "Spacingd": Spacingd,
+        "Rand3DElasticd": Rand3DElasticd,
     }
 
 
@@ -68,9 +70,9 @@ def load_monai_data_symbols() -> dict[str, Any]:
 def load_monai_network_symbols() -> dict[str, Any]:
     """Load MONAI network implementations lazily."""
 
-    from monai.networks.nets import DenseNet121
+    from monai.networks.nets import DenseNet121, resnet50
 
-    return {"DenseNet121": DenseNet121}
+    return {"DenseNet121": DenseNet121, "resnet50": resnet50}
 
 
 def load_monai_inferer_symbols() -> dict[str, Any]:
