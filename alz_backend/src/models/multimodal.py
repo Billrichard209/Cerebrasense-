@@ -90,7 +90,9 @@ class OASISMultimodalResNet(nn.Module):
             spatial_dims=spatial_dims,
             n_input_channels=in_channels,
             pretrained=True,
-            feed_forward=False
+            feed_forward=False,
+            shortcut_type="B",
+            bias_downsample=False
         )
         
         # ResNet50 bottleneck expansion outputs 2048 features.
