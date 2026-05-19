@@ -67,7 +67,7 @@ class OASISMultimodalDenseNet(nn.Module):
 
 class OASISMultimodalResNet(nn.Module):
     """
-    Fuses a PRE-TRAINED 3D ResNet50 (Kinetics-400) MRI features with clinical tabular data.
+    Fuses a PRE-TRAINED 3D ResNet50 (Kinetics-400 / MedicalNet) MRI features with clinical tabular data.
     Transfer learning significantly boosts clinical generalization on small datasets.
     """
 
@@ -84,17 +84,17 @@ class OASISMultimodalResNet(nn.Module):
         
         # Load pre-trained ResNet50
         resnet_cls = load_monai_network_symbols()["resnet50"]
-        # Note: pretrained=True downloads Kinetics weights. n_input_channels handles our 1-channel MRI.
+        # Note: pretrained=True downloads MedicalNet weights. 
+        # MONAI requires n_input_channels=1 and feed_forward=False for these weights.
         self.resnet = resnet_cls(
             spatial_dims=spatial_dims,
             n_input_channels=in_channels,
-            num_classes=out_channels, # We'll replace the final layer anyway
-            pretrained=True
+            pretrained=True,
+            feed_forward=False
         )
         
-        # In MONAI's ResNet, the final layer is 'fc'
-        self.cnn_feature_dim = self.resnet.fc.in_features
-        self.resnet.fc = nn.Identity()
+        # ResNet50 bottleneck expansion outputs 2048 features.
+        self.cnn_feature_dim = 2048
         
         # Process tabular data (e.g. Age, Sex, MMSE)
         self.tabular_mlp = nn.Sequential(
@@ -115,6 +115,8 @@ class OASISMultimodalResNet(nn.Module):
 
     def forward(self, img: torch.Tensor, tabular: torch.Tensor) -> torch.Tensor:
         cnn_features = self.resnet(img)
+        # Ensure the spatial dimensions (1, 1, 1) are flattened if present
+        cnn_features = torch.flatten(cnn_features, 1)
         tab_features = self.tabular_mlp(tabular)
         fused = torch.cat((cnn_features, tab_features), dim=1)
         logits = self.fusion_mlp(fused)
